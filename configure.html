@@ -6,7 +6,7 @@
 <meta content="True" name="HandheldFriendly">
 <meta content="yes" name="apple-mobile-web-app-capable">
 <meta content="width" name="MobileOptimized">
-<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta content="width=device-width" name="viewport">
 <link href="https://fonts.googleapis.com/css?family=Coda" rel="stylesheet" type="text/css">
 <style type="text/css">
  body {
@@ -79,6 +79,20 @@
 <script type="text/javascript">
  var f = document.forms[0];
  initForm(f);
+ if (document.location.hash) {
+  var conf = JSON.parse(document.location.hash.substr(1));
+  if (conf && conf.length) {
+   for (var i=0; i<conf.length; i++) {
+    var port = conf[i];
+	document.forms[i].name.value = port.name;
+	document.forms[i].cooldown.value = port.cooldown;
+	document.forms[i].hacks.value = port.hacks;
+	if (i<conf.length-1) {
+	 f.add.onclick();
+    }
+   }
+  }
+ }
  function initForm(f) {
   if (!f) {
    return false;
