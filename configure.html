@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Configure Hack Portal Pebble app</title>
+<meta content="True" name="HandheldFriendly">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="width" name="MobileOptimized">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<link href="https://fonts.googleapis.com/css?family=Coda" rel="stylesheet" type="text/css">
+<style type="text/css">
+ body {
+  background-color: #000;
+/*
+  color: rgb(17, 236, 247);
+*/
+  color: #FFF;
+  font-family: coda;
+  font-size: 1em;
+  padding: 4em;
+ }
+ h1 {
+  color: rgb(255, 187, 0);
+  font-weight: 800;
+  font-size: 180%;
+ }
+ fieldset {
+  border: 1px solid rgb(255, 187, 0);
+  width: 45em;
+ }
+ legend {
+  color: rgb(255, 187, 0);
+ }
+ table {
+  margin: 0 auto 1em auto;
+  width: 40em;
+ }
+ caption {
+  color: rgb(255, 187, 0);
+ }
+ p {
+  margin: 0 auto 1em auto;
+  width: 40em;
+ }
+ label {
+  display: inline-block;
+  font-weight: 800;
+  width: 7em;
+ }
+ input[type=submit], input[type=button] {
+  background-color: #000;
+  border: 1px solid rgb(17, 236, 247);
+  color: rgb(17, 236, 247);
+  font-size: larger;
+  font-weight: 400;
+  margin: 0 2em;
+ }
+</style>
+</head>
+<body>
+<h1>Hack Portal</h1>
+<form method="get" action="pebblejs://close">
+<fieldset>
+<legend>Portal features</legend>
+<table id="mods">
+<thead>
+<tr><th>M</th><th>O</th><th>D</th><th>S</th></tr>
+</thead>
+<tbody>
+<tr><td><select name="mod-1"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod-2"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</<option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod-3"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod-4"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td></tr>
+</tbody>
+</table>
+<p class="feat"><label>Name:</label> <input type="text" size="40" name="name" value="" /> (optional)</p>
+<p class="feat"><label>Cooldown:</label> <input type="number" size="2" steps="1" min="0" max="300" name="cooldown" value="300"/> seconds between hacks</p>
+<p class="feat"><label>Hacks:</label> <input type="number" size="2" steps="1" min="0" max="16" name="hacks" value="4" /> hacks before burnout</p>
+<p><input type="submit" value="Save config" /> <input type="button" name="add" value="Add portal" /> <input type="button" name="del" value="Delete portal" /></p>
+</fieldset>
+</form>
+<script type="text/javascript">
+ var f = document.forms[0];
+ initForm(f);
+ function initForm(f) {
+  if (!f) {
+   return false;
+  }
+  f.onsubmit = sendConfig;
+  f.add.onclick = clone;
+  f.del.onclick = destroy;
+  var sels = f.getElementsByTagName('select');
+  for (var i=0; i<sels.length; i++) {
+   sels[i].onchange = calculate;
+  }
+ }
+ function calculate() {
+  var cooldown = parseInt(this.form.cooldown.defaultValue);
+  var hacks = parseInt(this.form.hacks.defaultValue);
+  var coolfactor = 1;
+  var multihacks = [];
+  var heatsinks = []
+  for (var i=1; i<=4; i++) {
+   var s = this.form["mod-" + i];
+   var value = s.options[s.selectedIndex].value;
+   var parts = value.split('-');
+   if (parts[0] == 'hacks') {
+    multihacks.push(parseInt(parts[1]));
+   }
+   else if (parts[0] == 'cooldown') {
+	heatsinks.push(parseInt(parts[1]));
+   }
+  }
+  heatsinks.sort();
+  for (var i=heatsinks.length-1; i>=0; i--) {
+   // the rarest Heatsink has full effect
+   // the other Heatsinks' effect is 50 %
+   var divider = (i == (heatsinks.length-1)) ? 1 : 2;
+   coolfactor = coolfactor * ((100 - (heatsinks[i]/divider)) / 100);
+  }
+  this.form.cooldown.value = parseInt(cooldown * coolfactor);
+  multihacks.sort();
+  for (var i=multihacks.length-1; i>=0; i--) {
+   // the rarest Multi-hack has full effect
+   // the rarest Multi-hack has full effect
+   // the other Multi-hacks' effect is 50 %
+   var divider = (i == (multihacks.length-1)) ? 1 : 2;
+   hacks += parseInt(multihacks[i])/divider;
+  }
+  this.form.hacks.value = parseInt(hacks);
+ }
+ function clone() {
+  var parent = this.parentNode;
+  while (parent.parentNode && (parent.nodeName.toLowerCase() != 'form')) {
+   parent = parent.parentNode;
+  }
+  if (!parent) {
+   return false;
+  }
+  var copy = parent.cloneNode(true);
+  initForm(copy);
+  parent.parentNode.appendChild(copy);
+  return false;
+ }
+ function destroy() {
+  var parent = this.parentNode;
+  while (parent.parentNode && (parent.nodeName.toLowerCase() != 'form')) {
+   parent = parent.parentNode;
+  }
+  if (!parent) {
+   return false;
+  }
+  if (parent.parentNode.getElementsByTagName('form').length > 1) {
+   parent.parentNode.removeChild(parent);
+  }
+  return false;
+ }
+ function sendConfig(e) {
+  e.preventDefault();
+  var forms = document.getElementsByTagName('form');
+  var config = [];
+  for (var i=0; i<forms.length; i++) {
+   var f = forms[i];
+   config.push({'name': f.name.value, 'cooldown': f.cooldown.value, 'hacks': f.hacks.value});
+  }
+  // alert(JSON.stringify(config));
+  location.href = 'pebblejs://close#' + JSON.stringify(config);
+  return false;
+ }
+</script>
+</body>
+</html>
