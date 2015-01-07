@@ -1,0 +1,19 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        "configurable"
+    ],
+    "companyName": "Samuel Rinnetmaki",
+    "longName": "Hack Portal",
+    "projectType": "native",
+    "resources": {
+        "media": []
+    },
+    "shortName": "Hack Portal",
+    "uuid": "151442aa-6258-4189-b8e4-c4a9337216d1",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
