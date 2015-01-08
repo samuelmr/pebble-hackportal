@@ -159,6 +159,8 @@
   }
   var copy = parent.cloneNode(true);
   initForm(copy);
+  copy.name.value = "";
+  copy.hacktimes.value = "";
   parent.parentNode.appendChild(copy);
   return false;
  }
