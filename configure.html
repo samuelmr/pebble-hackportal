@@ -17,35 +17,39 @@
   color: #FFF;
   font-family: coda;
   font-size: 1em;
-  padding: 4em;
+  padding: 0.1em;
  }
  h1 {
   color: rgb(255, 187, 0);
   font-weight: 800;
   font-size: 180%;
+  margin: 0;
  }
  fieldset {
   border: 1px solid rgb(255, 187, 0);
-  width: 45em;
+  width: 95%;
  }
  legend {
   color: rgb(255, 187, 0);
  }
  table {
   margin: 0 auto 1em auto;
-  width: 40em;
+  width: 100%;
  }
  caption {
   color: rgb(255, 187, 0);
  }
  p {
   margin: 0 auto 1em auto;
-  width: 40em;
+  width: 100%;
  }
  label {
   display: inline-block;
   font-weight: 800;
   width: 7em;
+ }
+ option {
+  font-size: smaller;
  }
  input[type=submit], input[type=button] {
   background-color: #000;
@@ -53,7 +57,7 @@
   color: rgb(17, 236, 247);
   font-size: larger;
   font-weight: 400;
-  margin: 0 2em;
+  margin: 0 1em;
  }
 </style>
 </head>
@@ -67,13 +71,13 @@
 <tr><th>M</th><th>O</th><th>D</th><th>S</th></tr>
 </thead>
 <tbody>
-<tr><td><select name="mod-1"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod-2"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</<option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod-3"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod-4"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td></tr>
+<tr><td><select name="mod1"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod2"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</<option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod3"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td><td><select name="mod4"><option value="">Empty</option><option value="cooldown-20">Common Heat Sink</option><option value="cooldown-50">Rare Heat Sink</option><option value="cooldown-70">Very Rare Heat Sink</option><option value="hacks-4">Common Multi-hack</option><option value="hacks-8">Rare Multi-hack</option><option value="hacks-12">Very Rare Multi-hack</option></select></td></tr>
 </tbody>
 </table>
 <p class="feat"><label>Name:</label> <input type="text" size="40" name="name" value="" /> (optional)</p>
 <p class="feat"><label>Cooldown:</label> <input type="number" size="2" steps="1" min="0" max="300" name="cooldown" value="300"/> seconds between hacks</p>
 <p class="feat"><label>Hacks:</label> <input type="number" size="2" steps="1" min="0" max="16" name="hacks" value="4" /> hacks before burnout</p>
-<p><input type="submit" value="Save config" /> <input type="button" name="add" value="Add portal" /> <input type="button" name="del" value="Delete portal" /></p>
+<p><input type="hidden" name="hacktimes" value="" /><input type="submit" value="Save config" /> <input type="button" name="add" value="Add portal" /> <input type="button" name="del" value="Delete portal" /></p>
 </fieldset>
 </form>
 <script type="text/javascript">
@@ -87,6 +91,11 @@
 	document.forms[i].name.value = port.name;
 	document.forms[i].cooldown.value = port.cooldown;
 	document.forms[i].hacks.value = port.hacks;
+	document.forms[i].mod1.selectedIndex = port.mod1;
+	document.forms[i].mod2.selectedIndex = port.mod2;
+	document.forms[i].mod3.selectedIndex = port.mod3;
+	document.forms[i].mod4.selectedIndex = port.mod4;
+	document.forms[i].hacktimes.value = port.hacktimes;
 	if (i<conf.length-1) {
 	 f.add.onclick();
     }
@@ -112,7 +121,7 @@
   var multihacks = [];
   var heatsinks = []
   for (var i=1; i<=4; i++) {
-   var s = this.form["mod-" + i];
+   var s = this.form["mod" + i];
    var value = s.options[s.selectedIndex].value;
    var parts = value.split('-');
    if (parts[0] == 'hacks') {
@@ -172,7 +181,14 @@
   var config = [];
   for (var i=0; i<forms.length; i++) {
    var f = forms[i];
-   config.push({'name': f.name.value, 'cooldown': f.cooldown.value, 'hacks': f.hacks.value});
+   config.push({'name': f.name.value,
+                'cooldown': f.cooldown.value,
+				'hacks': f.hacks.value,
+				'mod1': f.mod1.selectedIndex,
+				'mod2': f.mod2.selectedIndex,
+				'mod3': f.mod3.selectedIndex,
+				'mod4': f.mod4.selectedIndex,
+				'hacktimes': f.hacktimes.value});
   }
   // alert(JSON.stringify(config));
   location.href = 'pebblejs://close#' + JSON.stringify(config);
