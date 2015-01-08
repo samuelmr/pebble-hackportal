@@ -27,7 +27,6 @@
  }
  fieldset {
   border: 1px solid rgb(255, 187, 0);
-  width: 95%;
  }
  legend {
   color: rgb(255, 187, 0);
@@ -44,7 +43,7 @@
  label {
   display: inline-block;
   font-weight: 800;
-  width: 7em;
+  width: 6em;
  }
  option {
   font-size: smaller;
@@ -90,7 +89,7 @@
 <tr><td><select name="mod1"><option value="">Empty</option><option value="cooldown-20">CHS</option><option value="cooldown-50">RHS</option><option value="cooldown-70">VRHS</option><option value="hacks-4">CMH</option><option value="hacks-8">RMH</option><option value="hacks-12">VRMH</option></select></td><td><select name="mod2"><option value="">Empty</option><option value="cooldown-20">CHS</<option><option value="cooldown-50">RHS</option><option value="cooldown-70">VRHS</option><option value="hacks-4">CMH</option><option value="hacks-8">RMH</option><option value="hacks-12">VRMH</option></select></td><td><select name="mod3"><option value="">Empty</option><option value="cooldown-20">CHS</option><option value="cooldown-50">RHS</option><option value="cooldown-70">VRHS</option><option value="hacks-4">CMH</option><option value="hacks-8">RMH</option><option value="hacks-12">VRMH</option></select></td><td><select name="mod4"><option value="">Empty</option><option value="cooldown-20">CHS</option><option value="cooldown-50">RHS</option><option value="cooldown-70">VRHS</option><option value="hacks-4">CMH</option><option value="hacks-8">RMH</option><option value="hacks-12">VRMH</option></select></td></tr>
 </tbody>
 </table>
-<p class="feat"><label>Name:</label> <input type="text" size="30" name="name" value="" /> (optional)</p>
+<p class="feat"><label>Name:</label> <input type="text" size="25" name="name" value="" /></p>
 <p class="feat"><label>Cooldown:</label> <input type="number" size="2" steps="1" min="0" max="300" name="cooldown" value="300"/> seconds between hacks</p>
 <p class="feat"><label>Hacks:</label> <input type="number" size="2" steps="1" min="0" max="16" name="hacks" value="4" /> hacks before burnout</p>
 <p><input type="hidden" name="hacktimes" value="" /><input type="submit" value="Save config" /> <input type="button" name="add" value="Add" /> <input type="button" name="del" value="Delete" /></p>
