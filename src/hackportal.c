@@ -12,11 +12,12 @@ static char time_text[] = "2014.43     29/35    4:53:23";
 static int16_t portal_count = 0;
 
 enum MessageKey {
-  INDEX = 0,    // TUPLE_INT
-  NAME = 1,     // TUPLE_CSTRING
-  COOLDOWN = 2, // TUPLE_INT
-  HACKS = 3,    // TUPLE_INT
-  PORTALS = 4   // TUPLE_INT
+  PORTALS = 0,   // TUPLE_INT
+  INDEX = 1,     // TUPLE_INT
+  NAME = 2,      // TUPLE_CSTRING
+  COOLDOWN = 3,  // TUPLE_INT
+  HACKS = 4,     // TUPLE_INT
+  HACKS_DONE = 5 // TUPLE_INT (time_t, sent from watch to phone)
 };
 static MenuLayer *menu_layer;
 
@@ -55,6 +56,52 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
 }
 
+void send_portal_hacks(int index, Portal *port) {
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+  if (iter == NULL) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Can not send command to phone!");
+    return;
+  }
+  dict_write_int8(iter, INDEX, index);
+  dict_write_int8(iter, HACKS_DONE, port->hacks_done);
+  for (int i=0; i<port->hacks_done; i++) {
+    dict_write_uint32(iter, 1 + HACKS_DONE + i, port->hacked[i]);
+  }
+  dict_write_end(iter);
+  app_message_outbox_send();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent hacks for portal %d (%d) to phone!", index, port->hacks_done);
+}
+
+void in_received_handler(DictionaryIterator *received, void *context) {
+  Tuple *lt = dict_find(received, PORTALS);
+  portal_count = (lt->value->int8 < MAX_PORTAL_COUNT) ? lt->value->int8 : MAX_PORTAL_COUNT;
+  Tuple *it = dict_find(received, INDEX);
+  int index = it->value->int8;
+  if (index < MAX_PORTAL_COUNT) {
+    Portal *port = &portals[index];
+    Tuple *nt = dict_find(received, NAME);
+    strcpy(port->name, nt->value->cstring);
+    Tuple *ct = dict_find(received, COOLDOWN);
+    port->cooldown_time = ct->value->uint32;
+    Tuple *ht = dict_find(received, HACKS);
+    port->hacks = ht->value->int8;
+    Tuple *hd = dict_find(received, HACKS_DONE);
+    port->hacks_done = hd->value->int8;
+    for (int i=0; i<port->hacks_done; i++) {
+      Tuple *hack = dict_find(received, 1 + HACKS_DONE + i);
+      port->hacked[i] = hack->value->uint32;      
+    };
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done);    
+  }
+  menu_layer_reload_data(menu_layer);
+  layer_mark_dirty(menu_layer_get_layer(menu_layer));
+}
+
+void in_dropped_handler(AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Message from phone dropped: %d", reason);
+}
+
 static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) {
   return 1;
 }
@@ -76,6 +123,9 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   Portal *port = &portals[cell_index->row];
+  if (!port->seconds || (port->seconds < 0)) {
+    port->seconds = 0;
+  }
   if (port->seconds > 0) {
     if (port->seconds == 1) {
       vibes_long_pulse();
@@ -101,6 +151,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
     }
   }
   port->hacks_done -= shift;
+
   char pre_text[25];
   if (port->hacks_done < port->hacks) {
     snprintf(pre_text, sizeof(pre_text), "Hack %d/%d in", port->hacks_done + 1, port->hacks);
@@ -115,42 +166,30 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
   char time_text[27];
   snprintf(time_text, sizeof(time_text), "%s %d:%02d:%02d", pre_text, hours, minutes, seconds);  
   menu_cell_basic_draw(ctx, cell_layer, port->name, time_text, NULL);
+
+  if (shift > 0) {
+    send_portal_hacks(cell_index->row, port);
+  }
 }
 
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   Portal *port = &portals[cell_index->row];
-  // hacks should be stored!
   port->hacked[port->hacks_done++] = time(NULL);
   port->seconds = port->cooldown_time;
   // APP_LOG(APP_LOG_LEVEL_DEBUG, "Hacked portal %d: %s (%d/%d)", cell_index->row, port->name, port->hacks_done, port->hacks);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
+  send_portal_hacks(cell_index->row, port);
 }
-void in_received_handler(DictionaryIterator *received, void *context) {
-  Tuple *it = dict_find(received, 0);
-  int index = it->value->int8;
-  if (index < MAX_PORTAL_COUNT) {
-    portal_count = (portal_count > index) ? portal_count : index;
-    Portal *port = &portals[index];
-    Tuple *nt = dict_find(received, NAME);
-    strcpy(port->name, nt->value->cstring);
-    Tuple *ct = dict_find(received, COOLDOWN);
-    port->cooldown_time = ct->value->uint32;
-    Tuple *ht = dict_find(received, HACKS);
-    port->hacks = ht->value->int8;
-    port->hacks_done = 0;
-    Tuple *lt = dict_find(received, PORTALS);
-    portal_count = lt->value->int8;
-    if (portal_count > MAX_PORTAL_COUNT) {
-      portal_count = MAX_PORTAL_COUNT;
-    }
-    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done);    
-  }
-  menu_layer_reload_data(menu_layer);
+
+void menu_long_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
+  Portal *port = &portals[cell_index->row];
+  port->seconds = 0;
+  port->hacks_done = 0;
+  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Reset portal %d", cell_index->row);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
+  send_portal_hacks(cell_index->row, port);
 }
-void in_dropped_handler(AppMessageResult reason, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Message from phone dropped: %d", reason);
-}
+
 void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_frame(window_layer);
@@ -161,7 +200,8 @@ void window_load(Window *window) {
     .get_header_height = menu_get_header_height_callback,
     .draw_header = menu_draw_header_callback,
     .draw_row = menu_draw_row_callback,
-    .select_click = menu_select_callback
+    .select_click = menu_select_callback,
+    .select_long_click = menu_long_callback
   });
   
   menu_layer_set_click_config_onto_window(menu_layer, window);

@@ -1,5 +1,12 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "cooldown": 3,
+        "hacks": 4,
+        "hacks_done": 5,
+        "index": 1,
+        "name": 2,
+        "portals": 0
+    },
     "capabilities": [
         "configurable"
     ],
@@ -19,7 +26,7 @@
     "shortName": "Hack Portal",
     "uuid": "151442aa-6258-4189-b8e4-c4a9337216d1",
     "versionCode": 1,
-    "versionLabel": "1.0",
+    "versionLabel": "1.1",
     "watchapp": {
         "watchface": false
     }
