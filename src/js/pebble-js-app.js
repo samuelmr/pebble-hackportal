@@ -17,7 +17,9 @@ Pebble.addEventListener("showConfiguration",
   function() {
     // var uri = "http://x.setpebble.com/" + setPebbleToken + "/" + Pebble.getAccountToken();
     var uri = "https://rawgithub.com/samuelmr/pebble-hackportal/master/configure.html#" +
-              JSON.stringify(config);
+              // doesn't work for some strange reason
+              encodeURIComponent(JSON.stringify(config));
+              // JSON.stringify(config);
     console.log("Configuration url: " + uri);
     Pebble.openURL(uri);
   }
