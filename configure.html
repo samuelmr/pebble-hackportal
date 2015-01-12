@@ -110,7 +110,7 @@
  var f = document.forms[0];
  initForm(f);
  if (document.location.hash) {
-  var conf = JSON.parse(document.location.hash.substr(1));
+  var conf = JSON.parse(decodeURIComponent(document.location.hash.substr(1)));
   if (conf && conf.length) {
    for (var i=0; i<conf.length; i++) {
     var port = conf[i];
@@ -219,7 +219,7 @@
                 'mod4': f.mod4.selectedIndex,
                 'hacktimes': f.hacktimes.value});
   }
-  location.href = 'pebblejs://close#' + JSON.stringify(config);
+  location.href = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(config));
   return false;
  }
 </script>
