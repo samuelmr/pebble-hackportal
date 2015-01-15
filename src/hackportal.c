@@ -1,6 +1,8 @@
 #include <pebble.h>
   
 #define MAX_PORTAL_COUNT 20
+#define MAX_HACKS 32
+#define WAKEUP_BEFORE 7
 
 static Window *window;
 static const uint32_t EPOCH = 1388527200; // beginning of cycle 2014.01
@@ -23,7 +25,7 @@ static MenuLayer *menu_layer;
 
 typedef struct{
   char name[80];
-  time_t hacked[16];
+  time_t hacked[MAX_HACKS + 1];
   time_t burned_out;
   int hacks_done;
   int hacks;
@@ -32,6 +34,7 @@ typedef struct{
   int seconds;
   TextLayer *name_layer;
   AppTimer *timer;
+  WakeupId wakeup_id;
 } Portal;
 
 Portal portals[MAX_PORTAL_COUNT];
@@ -56,6 +59,13 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
 }
 
+static void wakeup_handler(WakeupId id, int32_t row) {
+  MenuIndex index = MenuIndex(0, (int) row);
+  MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
+  menu_layer_set_selected_index(menu_layer, index, align, true);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Woken up by wakeup %lu (portal %lu)!", id, row);
+}
+
 void send_portal_hacks(int index, Portal *port) {
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
@@ -66,11 +76,19 @@ void send_portal_hacks(int index, Portal *port) {
   dict_write_int8(iter, INDEX, index);
   dict_write_int8(iter, HACKS_DONE, port->hacks_done);
   for (int i=0; i<port->hacks_done; i++) {
+    if (i > MAX_HACKS) {
+      break;
+    }
     dict_write_uint32(iter, 1 + HACKS_DONE + i, port->hacked[i]);
   }
   dict_write_end(iter);
   app_message_outbox_send();
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent hacks for portal %d (%d) to phone!", index, port->hacks_done);
+  if (port->wakeup_id && wakeup_query(port->wakeup_id, NULL)) {
+    wakeup_cancel(port->wakeup_id);
+  }
+  port->wakeup_id = wakeup_schedule(time(NULL) + port->seconds - WAKEUP_BEFORE, (int32_t) index, true);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Set wakeup timer for portal %d (%lu).", index, port->wakeup_id);
 }
 
 void in_received_handler(DictionaryIterator *received, void *context) {
@@ -89,10 +107,13 @@ void in_received_handler(DictionaryIterator *received, void *context) {
     Tuple *hd = dict_find(received, HACKS_DONE);
     port->hacks_done = hd->value->int8;
     for (int i=0; i<port->hacks_done; i++) {
+      if (i > MAX_HACKS) {
+        break;
+      }
       Tuple *hack = dict_find(received, 1 + HACKS_DONE + i);
       port->hacked[i] = hack->value->uint32;      
     };
-    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done);    
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done);    
   }
   menu_layer_reload_data(menu_layer);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
@@ -123,9 +144,17 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   Portal *port = &portals[cell_index->row];
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu row for portal %d", cell_index->row);
   if (!port->seconds || (port->seconds < 0)) {
-    port->seconds = 0;
+    if (port->wakeup_id) {
+      port->seconds = wakeup_query(port->wakeup_id, NULL) + WAKEUP_BEFORE;
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Found wakeup timer %lu for portal %d, set seconds to %d", port->wakeup_id, cell_index->row, port->seconds);
+    }
+    else {
+      port->seconds = 0;    
+    }
   }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds for portal %d: %d", cell_index->row, port->seconds);
   if (port->seconds > 0) {
     if (port->seconds == 1) {
       vibes_long_pulse();
@@ -133,9 +162,15 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
       menu_layer_set_selected_index(menu_layer, *cell_index, align, true);
     }
     else if (port->seconds <= 5) {
-      vibes_short_pulse();
+      vibes_double_pulse();
     }
     port->seconds--;  
+  }
+  if (!port->seconds && port->wakeup_id) {
+    if (wakeup_query(port->wakeup_id, NULL)) {
+      wakeup_cancel(port->wakeup_id);
+    }
+    port->wakeup_id = 0;
   }
   int shift = 0;
   time_t now = time(NULL);  
@@ -188,6 +223,12 @@ void menu_long_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data
   // APP_LOG(APP_LOG_LEVEL_DEBUG, "Reset portal %d", cell_index->row);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
   send_portal_hacks(cell_index->row, port);
+  if (port->wakeup_id) {
+    if (wakeup_query(port->wakeup_id, NULL)) {
+      wakeup_cancel(port->wakeup_id);
+    }
+    port->wakeup_id = 0;
+  }
 }
 
 void window_load(Window *window) {
@@ -231,11 +272,16 @@ static void window_unload(Window *window) {
 
 static void init(void) {
   tick_timer_service_subscribe(SECOND_UNIT, &handle_tick);
+  wakeup_service_subscribe(wakeup_handler);
   app_message_register_inbox_received(in_received_handler);
   app_message_register_inbox_dropped(in_dropped_handler);
-  const uint32_t inbound_size = 128;
-  const uint32_t outbound_size = 128;
+/*
+const uint32_t inbound_size = 256;
+  const uint32_t outbound_size = 256;
   app_message_open(inbound_size, outbound_size);
+*/
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
   window = window_create();
   // window_set_fullscreen(window, true);
   window_set_window_handlers(window, (WindowHandlers) {
@@ -243,6 +289,12 @@ static void init(void) {
     .unload = window_unload,
   });
   window_stack_push(window, true);
+  if (launch_reason() == APP_LAUNCH_WAKEUP) {
+    WakeupId id = 0;
+    int32_t reason = 0;
+    wakeup_get_launch_event(&id, &reason);
+    wakeup_handler(id, reason);
+  }
 }
 
 static void deinit(void) {

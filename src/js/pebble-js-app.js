@@ -5,7 +5,7 @@ var messageQueue = [];
 // the rest are hack times for a portal
 var FIRST_HACK = 6;
 var hack_separator = '|';
-var msgErrors = [];
+var errorCount = 0;
 // how many times each message is retried
 var MAX_ERRORS = 5;
 
@@ -88,7 +88,7 @@ function sendConfig(config) {
 function sendNextMessage() {
   if (messageQueue.length > 0) {
     Pebble.sendAppMessage(messageQueue[0], appMessageAck, appMessageNack);
-    console.log("Sent message to Pebble! " + JSON.stringify(messageQueue[0]));
+    console.log("Sent message to Pebble! " + messageQueue.length + ': ' + JSON.stringify(messageQueue[0]));
   }
 }
 
@@ -101,17 +101,14 @@ function appMessageAck(e) {
 function appMessageNack(e) {
   console.log("Message rejected by Pebble! " + e.error);
   if (e && e.data && e.data.transactionId) {
-    if (msgErrors[e.data.transactionId] >= MAX_ERRORS) {
-      messageQueue.shift();
-    }
-    else {
-      // try again
-      msgErrors[e.data.transactionId] = 1 + msgErrors[e.data.transactionId];
-    }
-    sendNextMessage();
+    console.log("Rejected message id: " + e.data.transactionId);
+  }
+  if (errorCount >= MAX_ERRORS) {
+    messageQueue.shift();
   }
   else {
-    messageQueue.shift();
-    sendNextMessage();
+    errorCount++;
+    console.log("Retrying, " + errorCount);
   }
+  sendNextMessage();
 }
