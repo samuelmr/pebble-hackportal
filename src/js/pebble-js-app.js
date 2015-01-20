@@ -1,5 +1,5 @@
 var initialized = false;
-var config = {};
+var config = [];
 var messageQueue = [];
 // tuple keys 0 - 5 are reserved (see settings), 
 // the rest are hack times for a portal
