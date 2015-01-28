@@ -204,7 +204,17 @@
   }
   return false;
  }
- function sendConfig(e) {
+ function getQueryParam(variable, default_) {
+    var query = location.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
+        if (pair[0] == variable)
+            return decodeURIComponent(pair[1]);
+    }
+    return default_ || false;
+}
+function sendConfig(e) {
   e.preventDefault();
   var forms = document.getElementsByTagName('form');
   var config = [];
@@ -219,7 +229,8 @@
                 'mod4': f.mod4.selectedIndex,
                 'hacktimes': f.hacktimes.value});
   }
-  location.href = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(config));
+  var return_to = getQueryParam('return_to', 'pebblejs://close#');
+  location.href = return_to + encodeURIComponent(JSON.stringify(config));
   return false;
  }
 </script>
