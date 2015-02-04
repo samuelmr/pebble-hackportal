@@ -10,7 +10,7 @@ var errorCount = 0;
 var MAX_ERRORS = 5;
 
 Pebble.addEventListener("ready", function(e) {
-  config = JSON.parse(localStorage.getItem("config"));
+  config = JSON.parse(localStorage.getItem("config")) || [];
   initialized = true;
   console.log("JavaScript app ready and running! " + e.ready);
   sendConfig(config);

@@ -210,7 +210,12 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   Portal *port = &portals[cell_index->row];
   port->hacked[port->hacks_done++] = time(NULL);
-  port->seconds = port->cooldown_time;
+  if (port->hacks_done < port->hacks) {
+    port->seconds = port->cooldown_time;
+  }
+  else {
+    port->seconds = SIGNIFICANT_TIME - (int) (time(NULL) - port->hacked[0]);
+  }
   // APP_LOG(APP_LOG_LEVEL_DEBUG, "Hacked portal %d: %s (%d/%d)", cell_index->row, port->name, port->hacks_done, port->hacks);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
   send_portal_hacks(cell_index->row, port);
