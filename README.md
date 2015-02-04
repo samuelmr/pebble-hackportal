@@ -19,4 +19,4 @@ The app remembers your hacks and tries to guess when the portals burn out and wh
 
 Long-press select on any row in the menu to reset the portal. (The timer and past hacks are cleared.)
 
-This Pebble app is not affiliated or endosed by Niantic Labs in any ways. Since it doesn't use any Ingress data directly, it shouldn't violate the Terms and Services of the game. I'm not a lawyer, thouhg. Use the app at your own risk and responsibility.
+This Pebble app is not affiliated or endosed by Niantic Labs in any ways. Since it doesn't use any Ingress data directly, it shouldn't violate the Terms and Services of the game. I'm not a lawyer, though. Use the app at your own risk and responsibility.
