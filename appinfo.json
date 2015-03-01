@@ -23,12 +23,8 @@
             }
         ]
     },
-    "sdkVersion": "3",
+    "sdkVersion": "2",
     "shortName": "Hack Portal",
-    "targetPlatforms": [
-        "aplite",
-        "basalt"
-    ],
     "uuid": "151442aa-6258-4189-b8e4-c4a9337216d1",
     "versionCode": 1,
     "versionLabel": "1.8",
