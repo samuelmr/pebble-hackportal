@@ -112,8 +112,11 @@
  initForm(f);
  if (document.location.hash) {
   var json = decodeURIComponent(document.location.hash.substr(1));
-  if (json && (json.charAt[0] == '[')) {
+  if (json && (json.charAt(0) == '[')) {
    conf = JSON.parse(json);
+  }
+  else {
+   console.log('Invalid config ' + json);
   }
   if (conf && conf.length) {
    for (var i=0; i<conf.length; i++) {
