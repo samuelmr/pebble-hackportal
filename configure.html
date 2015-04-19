@@ -108,9 +108,13 @@
 </div>
 <script type="text/javascript">
  var f = document.forms[0];
+ var conf;
  initForm(f);
  if (document.location.hash) {
-  var conf = JSON.parse(decodeURIComponent(document.location.hash.substr(1)));
+  var json = decodeURIComponent(document.location.hash.substr(1));
+  if (json && (json.charAt[0] == '[')) {
+   conf = JSON.parse(json);
+  }
   if (conf && conf.length) {
    for (var i=0; i<conf.length; i++) {
     var port = conf[i];
