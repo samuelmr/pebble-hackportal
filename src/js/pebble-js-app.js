@@ -10,19 +10,22 @@ var errorCount = 0;
 var MAX_ERRORS = 5;
 
 Pebble.addEventListener("ready", function(e) {
-  config = JSON.parse(localStorage.getItem("config") || "[]");
-  initialized = true;
-  console.log("JavaScript app ready and running! " + e.ready);
+  var storedConfig = localStorage.getItem("config");
+  if (storedConfig) {
+    console.log("Found stored config: " + storedConfig);
+    if (storedConfig.charAt(0) == "[") {
+      config = JSON.parse(storedConfig);
+    }
+  }
+  console.log("JavaScript app ready and running!");
   sendConfig(config);
+  initialized = true;
 });
 
 Pebble.addEventListener("showConfiguration",
   function() {
-    // var uri = "http://x.setpebble.com/" + setPebbleToken + "/" + Pebble.getAccountToken();
-    var uri = "https://rawgithub.com/samuelmr/pebble-hackportal/master/configure.html#" +
-              // doesn't work for some strange reason
+    var uri = "http://samuelmr.github.io/pebble-hackportal/configure.html#" +
               encodeURIComponent(JSON.stringify(config));
-              // JSON.stringify(config);
     console.log("Configuration url: " + uri);
     Pebble.openURL(uri);
   }
@@ -30,11 +33,13 @@ Pebble.addEventListener("showConfiguration",
 
 Pebble.addEventListener("webviewclosed",
   function(e) {
-    var webconfig = decodeURIComponent(e.response);
-    console.log("Webview window returned: " + webconfig);
-    localStorage.setItem("config", webconfig);
-    config = JSON.parse(webconfig);
-    sendConfig(config);
+    var webConfig = decodeURIComponent(e.response);
+    console.log("Webview window returned: " + webConfig);
+    if (webConfig.charAt(0) == "[") {
+      localStorage.setItem("config", webConfig);
+      config = JSON.parse(webConfig);
+      sendConfig(config);
+    }
   }
 );
 
