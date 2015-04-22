@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -50,6 +49,15 @@
  option {
   font-size: smaller;
  }
+ option.common {
+  background-color: #CFC;
+ }
+ option.rare {
+  background-color: #DAD;
+ }
+ option.veryrare {
+  background-color: #FAD;
+ }
  input[type=submit], input[type=button] {
   background-color: #000;
   border: 1px solid rgb(17, 236, 247);
@@ -71,6 +79,15 @@
   float: left;
   width: 3em;
  }
+ dt.common {
+  color: #CFC;
+ }
+ dt.rare {
+  color: #DAD;
+ }
+ dt.veryrare {
+  color: #FAD;
+ }
  dd {
   display: block;
   float: left;
@@ -88,7 +105,7 @@
 <tr><th>M</th><th>O</th><th>D</th><th>S</th></tr>
 </thead>
 <tbody>
-<tr><td><select name="mod1"><option value="">Empty</option><option value="cooldown-20">CHS</option><option value="cooldown-50">RHS</option><option value="cooldown-70">VRHS</option><option value="hacks-4">CMH</option><option value="hacks-8">RMH</option><option value="hacks-12">VRMH</option></select></td><td><select name="mod2"><option value="">Empty</option><option value="cooldown-20">CHS</<option><option value="cooldown-50">RHS</option><option value="cooldown-70">VRHS</option><option value="hacks-4">CMH</option><option value="hacks-8">RMH</option><option value="hacks-12">VRMH</option></select></td><td><select name="mod3"><option value="">Empty</option><option value="cooldown-20">CHS</option><option value="cooldown-50">RHS</option><option value="cooldown-70">VRHS</option><option value="hacks-4">CMH</option><option value="hacks-8">RMH</option><option value="hacks-12">VRMH</option></select></td><td><select name="mod4"><option value="">Empty</option><option value="cooldown-20">CHS</option><option value="cooldown-50">RHS</option><option value="cooldown-70">VRHS</option><option value="hacks-4">CMH</option><option value="hacks-8">RMH</option><option value="hacks-12">VRMH</option></select></td></tr>
+<tr><td><select name="mod1"><option value="">Empty</option><option value="cooldown-20" class="common">CHS</option><option value="cooldown-50" class="rare">RHS</option><option value="cooldown-70" class="veryrare">VRHS</option><option value="hacks-4" class="common">CMH</option><option value="hacks-8" class="rare">RMH</option><option value="hacks-12" class="veryrare">VRMH</option></select></td><td><select name="mod2"><option value="">Empty</option><option value="cooldown-20" class="common">CHS</option><option value="cooldown-50" class="rare">RHS</option><option value="cooldown-70" class="veryrare">VRHS</option><option value="hacks-4" class="common">CMH</option><option value="hacks-8" class="rare">RMH</option><option value="hacks-12" class="veryrare">VRMH</option></select></td><td><select name="mod3"><option value="">Empty</option><option value="cooldown-20" class="common">CHS</option><option value="cooldown-50" class="rare">RHS</option><option value="cooldown-70" class="veryrare">VRHS</option><option value="hacks-4" class="common">CMH</option><option value="hacks-8" class="rare">RMH</option><option value="hacks-12" class="veryrare">VRMH</option></select></td><td><select name="mod4"><option value="">Empty</option><option value="cooldown-20" class="common">CHS</option><option value="cooldown-50" class="rare">RHS</option><option value="cooldown-70" class="veryrare">VRHS</option><option value="hacks-4" class="common">CMH</option><option value="hacks-8" class="rare">RMH</option><option value="hacks-12" class="veryrare">VRMH</option></select></td></tr>
 </tbody>
 </table>
 <p class="feat"><label>Name:</label> <input type="text" size="25" name="name" value="" /></p>
@@ -100,12 +117,12 @@
 <div>
 <h2>Explanations for mod abbreviations</h2>
 <dl>
-<dt>CHS</dt><dd>Common Heat Sink</dd>
-<dt>RHS</dt><dd>Rare Heat Sink</dd>
-<dt>VRHS</dt><dd>Very Rare Heat Sink</dd>
-<dt>CMH</dt><dd>Common Multi-hack</dd>
-<dt>RMH</dt><dd>Rare Multi-hack</dd>
-<dt>VRMH</dt><dd>Very Rare Multi-hack</dd>
+<dt class="common">CHS</dt><dd>Common Heat Sink</dd>
+<dt class="rare">RHS</dt><dd>Rare Heat Sink</dd>
+<dt class="veryrare">VRHS</dt><dd>Very Rare Heat Sink</dd>
+<dt class="common">CMH</dt><dd>Common Multi-hack</dd>
+<dt class="rare">RMH</dt><dd>Rare Multi-hack</dd>
+<dt class="veryrare">VRMH</dt><dd>Very Rare Multi-hack</dd>
 </dl>
 </div>
 <script type="text/javascript">
