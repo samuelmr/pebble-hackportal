@@ -49,13 +49,13 @@
  option {
   font-size: smaller;
  }
- option.common {
+ option.common, select.common {
   background-color: #CFC;
  }
- option.rare {
+ option.rare, select.rare {
   background-color: #DAD;
  }
- option.veryrare {
+ option.veryrare, select.veryrare {
   background-color: #FAD;
  }
  input[type=submit], input[type=button] {
@@ -182,6 +182,7 @@
   for (var i=1; i<=4; i++) {
    var s = this.form["mod" + i];
    var value = s.options[s.selectedIndex].value;
+   s.className = s.options[s.selectedIndex].className;
    var parts = value.split('-');
    if (parts[0] == 'hacks') {
     multihacks.push(parseInt(parts[1]));
