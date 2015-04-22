@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -30,6 +31,7 @@
  }
  legend {
   color: rgb(255, 187, 0);
+  cursor: pointer;
  }
  table {
   margin: 0 0 1em 0;
@@ -80,7 +82,7 @@
 <h1>Hack Portal</h1>
 <form method="get" action="pebblejs://close">
 <fieldset>
-<legend>Portal features</legend>
+<legend>[-] Portal features</legend>
 <table id="mods">
 <thead>
 <tr><th>M</th><th>O</th><th>D</th><th>S</th></tr>
@@ -92,7 +94,7 @@
 <p class="feat"><label>Name:</label> <input type="text" size="25" name="name" value="" /></p>
 <p class="feat"><label>Cooldown:</label> <input type="number" size="2" steps="1" min="0" max="300" name="cooldown" value="300"/> seconds between hacks</p>
 <p class="feat"><label>Hacks:</label> <input type="number" size="2" steps="1" min="0" max="16" name="hacks" value="4" /> hacks before burnout</p>
-<p><input type="hidden" name="hacktimes" value="" /><input type="submit" value="Save config" /> <input type="button" name="add" value="Add" /> <input type="button" name="del" value="Delete" /></p>
+<div><input type="hidden" name="hacktimes" value="" /><input type="submit" value="Save config" /> <input type="button" name="add" value="Add" /> <input type="button" name="del" value="Delete" /> <input type="button" name="up" value="&#9650;" title="Move up" /> <input type="button" name="down" value="&#9660;" title="Move down" /></div>
 </fieldset>
 </form>
 <div>
@@ -109,6 +111,7 @@
 <script type="text/javascript">
  var f = document.forms[0];
  var conf;
+ var elementTypes = {};
  initForm(f);
  if (document.location.hash) {
   var json = decodeURIComponent(document.location.hash.substr(1));
@@ -142,9 +145,15 @@
   f.onsubmit = sendConfig;
   f.add.onclick = clone;
   f.del.onclick = destroy;
+  f.up.onclick = moveUp;
+  f.down.onclick = moveDown;
   var sels = f.getElementsByTagName('select');
   for (var i=0; i<sels.length; i++) {
    sels[i].onchange = calculate;
+  }
+  var legs = f.getElementsByTagName('legend');
+  for (var i=0; i<legs.length; i++) {
+   legs[i].onclick = collapse;
   }
  }
  function calculate() {
@@ -211,19 +220,78 @@
   }
   return false;
  }
- function getQueryParam(variable, default_) {
-    var query = location.search.substring(1);
-    // work around CloudPebble issue #124
-    query += location.hash.substr(location.hash.indexOf('?')+1);
-    var vars = query.split('&');
-    for (var i = 0; i < vars.length; i++) {
-        var pair = vars[i].split('=');
-        if (pair[0] == variable)
-            return decodeURIComponent(pair[1]);
+ function moveUp() {
+  var parent = this.parentNode;
+  while (parent.parentNode && (parent.nodeName.toLowerCase() != 'form')) {
+   parent = parent.parentNode;
+  }
+  if (!parent) {
+   return false;
+  }
+  if (parent.previousSibling) {
+   parent.parentNode.insertBefore(parent, parent.previousSibling);
+  }
+ }
+ function moveDown() {
+  var parent = this.parentNode;
+  while (parent.parentNode && (parent.nodeName.toLowerCase() != 'form')) {
+   parent = parent.parentNode;
+  }
+  if (!parent) {
+   return false;
+  }
+  if (parent.nextSibling.nextSibling && 
+      (parent.nextSibling.tagName.toLowerCase() == 'form')) {
+   parent.parentNode.insertBefore(parent, parent.nextSibling.nextSibling);
+  }
+ }
+ function collapse () {
+  var parent = this.parentNode;
+  if (!parent) {
+   return false;
+  }
+  for (var i=0; i<parent.children.length; i++) {
+   if (['table', 'p'].indexOf(parent.children[i].tagName.toLowerCase()) >= 0) {
+    parent.children[i].style.display = 'none';
+   }
+   else {
+   }
+  }
+  if (this.form && this.form['name']) {
+   this.innerHTML = '[+] ' + (this.form['name'].value || 'Nameless portal');
+  }
+  this.onclick = uncollapse;
+ }
+ function uncollapse (legend) {
+  var parent = this.parentNode;
+  if (!parent) {
+   return false;
+  }
+  for (var i=0; i<parent.children.length; i++) {
+   switch (parent.children[i].tagName.toLowerCase()) {
+    case 'p':
+     parent.children[i].style.display = 'block';
+    case 'table':
+     parent.children[i].style.display = 'table';
     }
-    return default_ || false;
-}
-function sendConfig(e) {
+  }
+  this.innerHTML = '[-]  Portal features';
+  this.onclick = collapse;
+ }
+ function getQueryParam(variable, default_) {
+  var query = location.search.substring(1);
+  // work around CloudPebble issue #124
+  query += location.hash.substr(location.hash.indexOf('?')+1);
+  var vars = query.split('&');
+  for (var i = 0; i < vars.length; i++) {
+   var pair = vars[i].split('=');
+   if (pair[0] == variable) {
+    return decodeURIComponent(pair[1]);
+   }
+  }
+  return default_ || false;
+ }
+ function sendConfig(e) {
   e.preventDefault();
   var forms = document.getElementsByTagName('form');
   var config = [];
