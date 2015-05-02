@@ -15,7 +15,7 @@ You can configure up to 20 portals, set their names, hack speeds (number and typ
 
 When you hack a portal, select the corresponding row in the Pebble app menu and click select. A timer will start and let you know when it's time to re-hack. The watch will vibrate 5 seconds beforehand.
 
-The app remembers your hacks and tries to guess when the portals burn out and when they become available again. The hacks are stored for 4 hours and then silently forgotten. The app doesn't need to be active all the time. It will wake up and vibrate when your portals have cooled down.
+The app remembers your hacks and tries to guess when the portals burn out and when they become available again. The hacks are stored for 4 hours and then silently forgotten. The app doesn't need to be active all the time. It will wake up and vibrate when your portals have cooled down. If you have Pebble Time or Pebble Time Steel, your hacks will be pushed to the Pebble timeline and you will be reminded to hack again before 24 hours are passed from your last hack.
 
 Long-press select on any row in the menu to reset the portal. (The timer and past hacks are cleared.)
 
