@@ -1,38 +1,38 @@
 {
-  "appKeys": {
-    "cooldown": 3,
-    "hacks": 4,
-    "hacks_done": 5,
-    "index": 1,
-    "name": 2,
-    "portals": 0
-  },
-  "capabilities": [
-    "configurable"
-  ],
-  "companyName": "Samuel Rinnetm\u00e4ki",
-  "longName": "Hack Portal",
-  "projectType": "native",
-  "resources": {
-    "media": [
-      {
-        "file": "images/icon.png",
-        "menuIcon": true,
-        "name": "IMAGE_MENU_ICON",
-        "type": "png"
-      }
-    ]
-  },
-  "sdkVersion": "3",
-  "shortName": "Hack Portal",
-  "uuid": "151442aa-6258-4189-b8e4-c4a9337216d1",
-  "versionCode": 3,
-  "versionLabel": "3.0",
-  "watchapp": {
-    "watchface": false
-  },
-  "targetPlatforms": [
-    "aplite",
-    "basalt"
-  ]
+    "appKeys": {
+        "cooldown": 3,
+        "hacks": 4,
+        "hacks_done": 5,
+        "index": 1,
+        "name": 2,
+        "portals": 0
+    },
+    "capabilities": [
+        "configurable"
+    ],
+    "companyName": "Samuel Rinnetm\u00e4ki",
+    "longName": "Hack Portal",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/icon.png",
+                "menuIcon": true,
+                "name": "IMAGE_MENU_ICON",
+                "type": "png"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "Hack Portal",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
+    "uuid": "151442aa-6258-4189-b8e4-c4a9337216d1",
+    "versionCode": 3,
+    "versionLabel": "3.1",
+    "watchapp": {
+        "watchface": false
+    }
 }
