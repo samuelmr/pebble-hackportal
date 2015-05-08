@@ -2,3 +2,4 @@
 */.DS_Store
 .lock-waf_darwin_build
 build/
+appstore-resources
