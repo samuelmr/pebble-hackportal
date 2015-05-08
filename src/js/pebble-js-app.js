@@ -86,7 +86,7 @@ Pebble.addEventListener("appmessage",
       console.log("Got hacks for portal " + index + ": " + port.hacktimes);
       config[index] = port;
       localStorage.setItem("config", JSON.stringify(config));
-      if (timelineToken) {
+      if (timelineToken && lastKnownTime) {
         console.log('Pushing Sojourner pin');
         pushSojournerPin(lastKnownTime);
       }
@@ -98,6 +98,7 @@ Pebble.addEventListener("appmessage",
 );
 
 function pushHackPin(name, time) {
+  // var id = new Date().getTime().toString();
   var id = name + '-' + time;
   var pin = {
     "id": id,
@@ -112,6 +113,7 @@ function pushHackPin(name, time) {
 }
 
 function pushSojournerPin(time) {
+  // var id = new Date().getTime().toString();
   var id = timelineToken + '-sojourner';
   var sojodeadline = time + 24 * 60 * 60 - 1;
   var pin = {
@@ -150,7 +152,9 @@ function pushSojournerPin(time) {
 }
 
 function UTCDate(time) {
-  return new Date(time*1000).toISOString();
+  console.log('Timezone offset: ' + new Date(time*1000).getTimezoneOffset());
+  var offset = new Date(time*1000).getTimezoneOffset() * 60;
+  return new Date((time+offset)*1000).toISOString();
 /*
   var d = new Date(time*1000);
   var y = d.getUTCFullYear();
@@ -245,7 +249,7 @@ var API_URL_ROOT = 'https://timeline-api.getpebble.com/';
  */
 function timelineRequest(pin, type, callback) {
   // User or shared?
-  var url = API_URL_ROOT + 'v1/user/pins/' + pin.id;
+  var url = API_URL_ROOT + 'v1/user/pins/' + encodeURIComponent(pin.id);
 
   // Create XHR
   var xhr = new XMLHttpRequest();
@@ -257,6 +261,8 @@ function timelineRequest(pin, type, callback) {
   // lib modified here (token already known)
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('X-User-Token', '' + timelineToken);
+  console.log('Sending pin to ' + url);
+  console.log('Pin: ' + JSON.stringify(pin));
   xhr.send(JSON.stringify(pin));
   console.log('timeline: request sent.');
 }

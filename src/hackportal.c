@@ -2,7 +2,7 @@
   
 #define MAX_PORTAL_COUNT 20
 #define MAX_HACKS 32
-#define WAKEUP_BEFORE 7
+#define WAKEUP_BEFORE 12
 
 static Window *window;
 static const uint32_t EPOCH = 1388527200; // beginning of cycle 2014.01
@@ -24,7 +24,7 @@ enum MessageKey {
 static MenuLayer *menu_layer;
 
 typedef struct{
-  char name[80];
+  char name[31];
   time_t hacked[MAX_HACKS + 1];
   time_t burned_out;
   int hacks_done;
@@ -41,11 +41,11 @@ Portal portals[MAX_PORTAL_COUNT];
 
 static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   time_t rt = time(NULL);
-	uint32_t t = rt - EPOCH;
+  uint32_t t = rt - EPOCH;
   uint32_t cycle = (t / SECS_IN_CYCLE)%50;
-	uint32_t checkpoint = (t % SECS_IN_CYCLE) / SECS_IN_CHECKPOINT + 1;
-	uint32_t countdown = SECS_IN_CHECKPOINT - (t % SECS_IN_CHECKPOINT);
-	uint32_t next = rt + countdown;
+  uint32_t checkpoint = (t % SECS_IN_CYCLE) / SECS_IN_CHECKPOINT + 1;
+  uint32_t countdown = SECS_IN_CHECKPOINT - (t % SECS_IN_CHECKPOINT);
+  uint32_t next = rt + countdown;
   int year = EPOCH_YEAR + (int) ((t / SECS_IN_CYCLE) / 50);
   int hours = (int) (countdown / (60 * 60));
   int minutes = (countdown - (hours * 60 * 60)) / 60;
@@ -113,6 +113,11 @@ void in_received_handler(DictionaryIterator *received, void *context) {
       Tuple *hack = dict_find(received, 1 + HACKS_DONE + i);
       port->hacked[i] = hack->value->uint32;      
     };
+    port->seconds = (port->hacked[port->hacks_done-1] + port->cooldown_time) - time(NULL);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Last hack %d done %d seconds ago (%d)", port->hacks_done, port->seconds, (int) port->hacked[port->hacks_done-1]);
+    if (port->seconds > port->cooldown_time) {
+      port->seconds = 0;
+    }
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done);    
   }
   menu_layer_reload_data(menu_layer);
@@ -147,11 +152,14 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu row for portal %d", cell_index->row);
   if (!port->seconds || (port->seconds < 0)) {
     if (port->wakeup_id) {
-      port->seconds = wakeup_query(port->wakeup_id, NULL) + WAKEUP_BEFORE;
+      time_t left;
+      wakeup_query(port->wakeup_id, &left);
+      port->seconds = left + WAKEUP_BEFORE;
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Found wakeup timer %lu for portal %d, set seconds to %d", port->wakeup_id, cell_index->row, port->seconds);
+      port->wakeup_id = 0;
     }
     else {
-      port->seconds = 0;    
+      port->seconds = 0;
     }
   }
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds for portal %d: %d", cell_index->row, port->seconds);
@@ -173,7 +181,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
     port->wakeup_id = 0;
   }
   int shift = 0;
-  time_t now = time(NULL);  
+  time_t now = time(NULL);
   for (int i=0; i<port->hacks_done; i++) {
     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Old hack %d: %d, %d (%d)", i, (int) port->hacked[i], port->cooldown_time, (int) now);
     if ((int) (now - port->hacked[i]) > SIGNIFICANT_TIME) {
@@ -252,7 +260,7 @@ void window_load(Window *window) {
   
   menu_layer_set_click_config_onto_window(menu_layer, window);
   layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
-  
+
   Portal *port1 = &portals[0];
   port1->cooldown_time = 300;
   strcpy(port1->name, "Unnamed Portal 1");
