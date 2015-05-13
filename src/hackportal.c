@@ -167,11 +167,11 @@ void in_received_handler(DictionaryIterator *received, void *context) {
       port->hacked[i] = hack->value->uint32;      
     };
     port->seconds = (port->hacked[port->hacks_done-1] + port->cooldown_time) - time(NULL);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Last hack %d done %d seconds ago (%d)", port->hacks_done, port->seconds, (int) port->hacked[port->hacks_done-1]);
-    if (port->seconds > port->cooldown_time) {
+    if ((port->seconds < 0) || (port->seconds > port->cooldown_time)) {
       port->seconds = 0;
     }
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done);    
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Last hack %d done %d seconds ago (%d)", port->hacks_done, port->seconds, (int) port->hacked[port->hacks_done-1]);
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done);    
   }
   menu_layer_reload_data(menu_layer);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));

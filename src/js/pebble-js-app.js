@@ -26,11 +26,11 @@ Pebble.addEventListener("ready", function(e) {
   if (Pebble.getTimelineToken) {
     Pebble.getTimelineToken(
       function (token) {
-        console.log('Got timeline token ' + token);
+        // console.log('Got timeline token ' + token);
         timelineToken = token;
       },
       function (error) { 
-        console.log('Error getting timeline token: ' + error);
+        console.warn('Error getting timeline token: ' + error);
       }
     );    
   }
@@ -60,39 +60,42 @@ Pebble.addEventListener("webviewclosed",
 
 Pebble.addEventListener("appmessage",
   function(e) {
-    console.log('Got message!' + e.payload.index);
+    // console.log('Got message!' + e.payload.index);
     if (e && e.payload) {
       var index = e.payload.index;
       var port = config[index];
       if (!port) {
-        console.log('Got hacks for unconfigured portal!');
+        console.warn('Got hacks for unconfigured portal!');
         return false;
       }
       port.hacks_done = e.payload.hacks_done;
       var hacked = [];
       for (var i=0; i<port.hacks_done; i++) {
         var key = (FIRST_HACK + i).toString();
-        hacked.push(e.payload[key]);
-        console.log('Hack ' + i + '/' + port.hacks_done + ': ' + e.payload[key]);
+        var time = e.payload[key];
+        var tzoff = new Date(time*1000).getTimezoneOffset() * 60;
+        // console.log("Timezone offset " + tzoff + " for " + time);
+        hacked.push(time);
+        // console.log('Hack ' + i + '/' + port.hacks_done + ': ' + time);
         if (timelineToken) {
-          pushHackPin(port.name, e.payload[key]);
-          console.log('Pushing pin');
-          if (e.payload[key] > lastKnownTime) {
-            lastKnownTime = e.payload[key];
+          pushHackPin(port.name, time + tzoff);
+          // console.log('Pushing pin');
+          if (time > lastKnownTime) {
+            lastKnownTime = time;
           }
         }
       }
       port.hacktimes = hacked.join(hack_separator);
-      console.log("Got hacks for portal " + index + ": " + port.hacktimes);
+      // console.log("Got hacks for portal " + index + ": " + port.hacktimes);
       config[index] = port;
       localStorage.setItem("config", JSON.stringify(config));
       if (timelineToken && lastKnownTime) {
-        console.log('Pushing Sojourner pin');
-        pushSojournerPin(lastKnownTime);
+        // console.log('Pushing Sojourner pin');
+        pushSojournerPin(lastKnownTime + tzoff);
       }
     }
     else {
-      console.log("No payload in message from watch!");  
+      console.warn("No payload in message from watch!");  
     }
   }
 );
@@ -163,7 +166,7 @@ function readableTime(time) {
   var str = h + ':' +
       ((i < 10) ? '0' : '') + i + ':' +
       ((s < 10) ? '0' : '') + s;
-  console.log('Converted ' + time + ' into ' + str);
+  // console.log('Converted ' + time + ' into ' + str);
   return str;
 }
 
@@ -172,7 +175,7 @@ function sendConfig(config) {
     var hacktimes = [];
     if (config[i].hacktimes && (config[i].hacktimes.length > 0)) {
       hacktimes = config[i].hacktimes.split(hack_separator); 
-      console.log("Found " + hacktimes.length + " hack times from " + config[i].hacktimes);
+      // console.log("Found " + hacktimes.length + " hack times from " + config[i].hacktimes);
     }
     var msg = {portals: config.length,
                index: i,
@@ -192,20 +195,20 @@ function sendConfig(config) {
 function sendNextMessage() {
   if (messageQueue.length > 0) {
     Pebble.sendAppMessage(messageQueue[0], appMessageAck, appMessageNack);
-    console.log("Sent message to Pebble! " + messageQueue.length + ': ' + JSON.stringify(messageQueue[0]));
+    // console.log("Sent message to Pebble! " + messageQueue.length + ': ' + JSON.stringify(messageQueue[0]));
   }
 }
 
 function appMessageAck(e) {
-  console.log("Message accepted by Pebble!");
+  // console.log("Message accepted by Pebble!");
   messageQueue.shift();
   sendNextMessage();
 }
 
 function appMessageNack(e) {
-  console.log("Message rejected by Pebble! " + e.error);
+  console.warn("Message rejected by Pebble! " + e.error);
   if (e && e.data && e.data.transactionId) {
-    console.log("Rejected message id: " + e.data.transactionId);
+    // console.log("Rejected message id: " + e.data.transactionId);
   }
   if (errorCount >= MAX_ERRORS) {
     messageQueue.shift();
@@ -235,17 +238,17 @@ function timelineRequest(pin, type, callback) {
   // Create XHR
   var xhr = new XMLHttpRequest();
   xhr.onload = function () {
-    console.log('timeline: response received: ' + this.responseText);
+    // console.log('timeline: response received: ' + this.responseText);
     callback(this.responseText);
   };
   xhr.open(type, url);
   // lib modified here (token already known)
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('X-User-Token', '' + timelineToken);
-  console.log('Sending pin to ' + url);
-  console.log('Pin: ' + JSON.stringify(pin));
+  // console.log('Sending pin to ' + url);
+  // console.log('Pin: ' + JSON.stringify(pin));
   xhr.send(JSON.stringify(pin));
-  console.log('timeline: request sent.');
+  // console.log('timeline: request sent.');
 }
 
 /**
