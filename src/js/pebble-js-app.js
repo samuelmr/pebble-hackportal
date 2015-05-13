@@ -152,26 +152,7 @@ function pushSojournerPin(time) {
 }
 
 function UTCDate(time) {
-  console.log('Timezone offset: ' + new Date(time*1000).getTimezoneOffset());
-  var offset = new Date(time*1000).getTimezoneOffset() * 60;
-  return new Date((time+offset)*1000).toISOString();
-/*
-  var d = new Date(time*1000);
-  var y = d.getUTCFullYear();
-  var m = d.getUTCMonth() + 1;
-  var a = d.getUTCDate();
-  var h = d.getUTCHours();
-  var i = d.getUTCMinutes();
-  var s = d.getUTCSeconds();
-  var str = y + '-' +
-      ((m < 10) ? '0' : '') + m + '-' +
-      ((a < 10) ? '0' : '') + a + 'T' +
-      ((h < 10) ? '0' : '') + h + ':' +
-      ((i < 10) ? '0' : '') + i + ':' +
-      ((s < 10) ? '0' : '') + s + 'Z';
-  console.log('Converted ' + time + ' into ' + str);
-  return str;
-*/
+  return new Date(time*1000).toISOString();
 }
 
 function readableTime(time) {
