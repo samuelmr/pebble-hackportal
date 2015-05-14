@@ -60,8 +60,40 @@ void send_portal_hacks(int index, Portal *port) {
   if (port->wakeup_id && wakeup_query(port->wakeup_id, NULL)) {
     wakeup_cancel(port->wakeup_id);
   }
-  port->wakeup_id = wakeup_schedule(time(NULL) + port->seconds - WAKEUP_BEFORE, (int32_t) index, true);
-  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Set wakeup timer for portal %d (%ld).", index, port->wakeup_id);
+  if (port->seconds > WAKEUP_BEFORE) {
+    port->wakeup_id = wakeup_schedule(time(NULL) + port->seconds - WAKEUP_BEFORE, (int32_t) index, true);
+    if (port->wakeup_id > 0) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Set wakeup timer for portal %d after %d seconds (%ld).", index, port->seconds - WAKEUP_BEFORE, port->wakeup_id);
+    }
+    else {
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Could not set wakeup timer for portal %d after %d seconds: %ld.", index, port->seconds - WAKEUP_BEFORE, port->wakeup_id);
+    }
+  }
+}
+
+static int clear_old_hacks(int index, Portal *port) {
+  int shift = 0;
+  // just in case, should never happen
+  if (port->hacks_done > MAX_HACKS) {
+    port->hacks_done = MAX_HACKS;
+  }
+  for (int i=0; i<port->hacks_done; i++) {
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Old hack %d: %d, %d (%d)", i, (int) port->hacked[i], port->cooldown_time, (int) time(NULL));
+    if ((time(NULL) - port->hacked[i]) >= SIGNIFICANT_TIME) {
+      shift++;
+    }
+    else {
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Still valid hack %ld - %ld < %d", time(NULL), port->hacked[i], SIGNIFICANT_TIME);
+    }
+  }
+  if (shift > 0) {
+    for (int i=shift; i<port->hacks_done; i++) {
+      port->hacked[i-shift] = port->hacked[i];
+    }
+    port->hacks_done -= shift;
+  }
+  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Cleared %d old hacks for portal %d, %d left", shift, index, port->hacks_done);
+  return shift;
 }
 
 static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
@@ -81,24 +113,15 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   strftime(next_str, sizeof(next_str), "%Y-%m-%d %H:%M:%S", tms);
   snprintf(time_text, sizeof(time_text), "%d.%02ld     %02ld/35    %d:%02d:%02d",
                                          year, cycle, checkpoint, hours, minutes, seconds);  
-  time_t now = time(NULL);
   for (int i=0; i<MAX_PORTAL_COUNT; i++) {
     Portal *port = &portals[i];
     if (port != NULL) {
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds for portal %d: %d)", i, port->seconds);
       if (!port->seconds) {
         continue;
       }
       if (port->seconds < 0) {
         port->seconds = 0;
-        if (port->wakeup_id) {
-          time_t left = 0;
-          wakeup_query(port->wakeup_id, &left);
-          if (left > 0) {
-            port->seconds = left + WAKEUP_BEFORE;
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "Found wakeup timer %d for portal %d, set seconds to %d", (int) port->wakeup_id, i, port->seconds);
-            port->wakeup_id = 0;  
-          }
-        }
       }
       if (port->seconds > 0) {
         if (port->seconds == 1) {
@@ -118,19 +141,10 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
         }
         port->wakeup_id = 0;
       }
-      int shift = 0;
-      for (int i=0; i<port->hacks_done; i++) {
-        // APP_LOG(APP_LOG_LEVEL_DEBUG, "Old hack %d: %d, %d (%d)", i, (int) port->hacked[i], port->cooldown_time, (int) now);
-        if ((int) (now - port->hacked[i]) > SIGNIFICANT_TIME) {
-          shift++;
-        }
-      }
-      if (shift > 0) {
-        for (int i=shift; i<port->hacks_done; i++) {
-          port->hacked[i-shift] = port->hacked[i];
-        }
-        port->hacks_done -= shift;
-        send_portal_hacks(i, port);
+      clear_old_hacks(i, port);
+      if (port->hacks_done >= port->hacks) {
+        // APP_LOG(APP_LOG_LEVEL_DEBUG, "Portal %d burned out %ld seconds ago (more than %d seconds between %ld and %ld)", i, (time(NULL) - port->hacked[0]), SIGNIFICANT_TIME, time(NULL), port->hacked[0]);
+        port->seconds = SIGNIFICANT_TIME - (time(NULL) - port->hacked[0]);
       }
     }
   }
@@ -141,7 +155,18 @@ static void wakeup_handler(WakeupId id, int32_t row) {
   MenuIndex index = MenuIndex(0, (int) row);
   MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
   menu_layer_set_selected_index(menu_layer, index, align, true);
-  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Woken up by wakeup %ld (portal %ld)!", id, row);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Woken up by wakeup %ld (portal %ld)!", id, row);
+  Portal *port = &portals[row];
+  if (port->wakeup_id) {
+    time_t left = 0;
+    wakeup_query(port->wakeup_id, &left);
+    if (left > 0) {
+      port->seconds = left + WAKEUP_BEFORE;
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Found wakeup timer %d for portal %ld, set seconds to %d", (int) port->wakeup_id, row, port->seconds);
+      port->wakeup_id = 0;  
+    }
+  }
+  clear_old_hacks(row, port);
 }
 
 void in_received_handler(DictionaryIterator *received, void *context) {
@@ -167,11 +192,19 @@ void in_received_handler(DictionaryIterator *received, void *context) {
       port->hacked[i] = hack->value->uint32;      
     };
     port->seconds = (port->hacked[port->hacks_done-1] + port->cooldown_time) - time(NULL);
-    if ((port->seconds < 0) || (port->seconds > port->cooldown_time)) {
+    if (port->seconds < 0) {
       port->seconds = 0;
     }
+    if ((port->hacks_done < port->hacks) && (port->seconds > port->cooldown_time)) {
+      port->seconds = 0;
+    }
+    if (port->hacks_done >= port->hacks) {
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Portal %d burned out %ld seconds ago (more than %d seconds between %ld and %ld)", i, (time(NULL) - port->hacked[0]), SIGNIFICANT_TIME, time(NULL), port->hacked[0]);
+      port->seconds = SIGNIFICANT_TIME - (time(NULL) - port->hacked[0]);
+    }
+    clear_old_hacks(index, port);
     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Last hack %d done %d seconds ago (%d)", port->hacks_done, port->seconds, (int) port->hacked[port->hacks_done-1]);
-    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done);    
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done, port->seconds);    
   }
   menu_layer_reload_data(menu_layer);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
@@ -202,15 +235,14 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   Portal *port = &portals[cell_index->row];
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu row for portal %d", cell_index->row);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds for portal %d: %d", cell_index->row, port->seconds);
+  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu row for portal %d", cell_index->row);
+  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Seconds for portal %d: %d", cell_index->row, port->seconds);
   char pre_text[25];
   if (port->hacks_done < port->hacks) {
     snprintf(pre_text, sizeof(pre_text), "Hack %d/%d in", port->hacks_done + 1, port->hacks);
   }
   else {
     strcpy(pre_text, "Burned out for");
-    port->seconds = SIGNIFICANT_TIME - (int) (time(NULL) - port->hacked[0]);
   }
   int hours = (int) port->seconds/3600;
   int minutes = (int) (port->seconds - (hours * 3600))/60;
