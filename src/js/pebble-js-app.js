@@ -73,12 +73,13 @@ Pebble.addEventListener("appmessage",
       for (var i=0; i<port.hacks_done; i++) {
         var key = (FIRST_HACK + i).toString();
         var time = e.payload[key];
-        var tzoff = new Date(time*1000).getTimezoneOffset() * 60;
+        // var tzoff = new Date(time*1000).getTimezoneOffset() * 60;
         // console.log("Timezone offset " + tzoff + " for " + time);
         hacked.push(time);
         // console.log('Hack ' + i + '/' + port.hacks_done + ': ' + time);
         if (timelineToken) {
-          pushHackPin(port.name, time + tzoff);
+          // pushHackPin(port.name, time + tzoff);
+          pushHackPin(port.name, time);
           // console.log('Pushing pin');
           if (time > lastKnownTime) {
             lastKnownTime = time;
@@ -91,7 +92,8 @@ Pebble.addEventListener("appmessage",
       localStorage.setItem("config", JSON.stringify(config));
       if (timelineToken && lastKnownTime) {
         // console.log('Pushing Sojourner pin');
-        pushSojournerPin(lastKnownTime + tzoff);
+        // pushSojournerPin(lastKnownTime + tzoff);
+        pushSojournerPin(lastKnownTime);
       }
     }
     else {
@@ -112,7 +114,9 @@ function pushHackPin(name, time) {
       "tinyIcon": "system://images/TIMELINE_CALENDAR_TINY"
     }
   };
-  insertUserPin(pin, function(result) {console.log('Pushed hack pin: ' + result);});
+  insertUserPin(pin, function(result) {
+    // console.log('Pushed hack pin: ' + result);
+  });
 }
 
 function pushSojournerPin(time) {
@@ -151,7 +155,9 @@ function pushSojournerPin(time) {
       }
     ]           
   };
-  insertUserPin(pin, function(result) {console.log('Pushed sojo pin: ' + result);});
+  insertUserPin(pin, function(result) {
+    // console.log('Pushed sojo pin: ' + result);
+  });
 }
 
 function UTCDate(time) {
