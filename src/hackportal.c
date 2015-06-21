@@ -126,7 +126,7 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   struct tm *tms;
   tms = localtime((time_t*) &next);
   strftime(next_str, sizeof(next_str), "%Y-%m-%d %H:%M:%S", tms);
-  snprintf(time_text, sizeof(time_text), "%d.%02ld   %02ld/35  %s  %d:%02d:%02d",
+  snprintf(time_text, sizeof(time_text), "%d.%02ld  %02ld/35  %s  %d:%02d:%02d",
     year, cycle, checkpoint, silent_indicator, hours, minutes, seconds);  
   for (int i=0; i<MAX_PORTAL_COUNT; i++) {
     Portal *port = &portals[i];
@@ -335,8 +335,8 @@ static void window_unload(Window *window) {
 
 static void init(void) {
 
-  mode[VIBE] = "º";
-  mode[NO_VIBE] = "°";
+  mode[VIBE] = " ¦";
+  mode[NO_VIBE] = "x";
   silent = persist_exists(MODE_KEY) ? persist_read_int(MODE_KEY) : 0;
   silent_indicator = mode[silent];
 
