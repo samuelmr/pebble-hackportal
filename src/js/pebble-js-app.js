@@ -12,16 +12,15 @@ var timelineToken;
 var lastKnownTime = 0;
 var hoursBefore = 2; // first sojourner alert
 var minsBefore = 15; // last sojourner alert
+var storedConfig = localStorage.getItem("config");
+if (storedConfig) {
+  console.log("Found stored config: " + storedConfig);
+  if (storedConfig.charAt(0) == "[") {
+    config = JSON.parse(storedConfig);
+  }
+}
 
 Pebble.addEventListener("ready", function(e) {
-  var storedConfig = localStorage.getItem("config");
-  if (storedConfig) {
-    console.log("Found stored config: " + storedConfig);
-    if (storedConfig.charAt(0) == "[") {
-      config = JSON.parse(storedConfig);
-    }
-  }
-  console.log("JavaScript app ready and running!");
   sendConfig(config);
   if (Pebble.getTimelineToken) {
     Pebble.getTimelineToken(
@@ -35,6 +34,7 @@ Pebble.addEventListener("ready", function(e) {
     );    
   }
   initialized = true;
+  console.log("JavaScript app ready and running!");
 });
 
 Pebble.addEventListener("showConfiguration",

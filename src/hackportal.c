@@ -12,6 +12,15 @@ static const uint32_t SECS_IN_CHECKPOINT = 18000;
 static const int16_t SIGNIFICANT_TIME = 4 * 60 * 60;
 static char time_text[] = "2014.43     29/35    4:53:23";
 static int16_t portal_count = 0;
+static int silent;
+
+static char *silent_indicator;
+static char *mode[2];
+static int MODE_KEY = 6;
+enum MODES {
+  VIBE = 0,
+  NO_VIBE = 1
+};
 
 enum MessageKey {
   PORTALS = 0,   // TUPLE_INT
@@ -38,6 +47,12 @@ typedef struct{
 } Portal;
 
 Portal portals[MAX_PORTAL_COUNT];
+
+static void tap_handler(AccelAxisType axis, int32_t direction) {
+  silent = !silent;
+  silent_indicator = mode[silent];
+  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Tapped, set silent to %d", (int) silent);
+}
 
 void send_portal_hacks(int index, Portal *port) {
   DictionaryIterator *iter;
@@ -111,8 +126,8 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   struct tm *tms;
   tms = localtime((time_t*) &next);
   strftime(next_str, sizeof(next_str), "%Y-%m-%d %H:%M:%S", tms);
-  snprintf(time_text, sizeof(time_text), "%d.%02ld     %02ld/35    %d:%02d:%02d",
-                                         year, cycle, checkpoint, hours, minutes, seconds);  
+  snprintf(time_text, sizeof(time_text), "%d.%02ld   %02ld/35  %s  %d:%02d:%02d",
+    year, cycle, checkpoint, silent_indicator, hours, minutes, seconds);  
   for (int i=0; i<MAX_PORTAL_COUNT; i++) {
     Portal *port = &portals[i];
     if (port != NULL) {
@@ -125,13 +140,17 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
       }
       if (port->seconds > 0) {
         if (port->seconds == 1) {
-          vibes_long_pulse();
+          if (!silent) {
+            vibes_long_pulse();
+          }
           MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
           MenuIndex cell_index = {0, i};
           menu_layer_set_selected_index(menu_layer, cell_index, align, true);
         }
         else if (port->seconds <= 5) {
-          vibes_double_pulse();
+          if (!silent) {
+            vibes_double_pulse();
+          }
         }
         port->seconds--;
       }
@@ -315,11 +334,19 @@ static void window_unload(Window *window) {
 }
 
 static void init(void) {
+
+  mode[VIBE] = "º";
+  mode[NO_VIBE] = "°";
+  silent = persist_exists(MODE_KEY) ? persist_read_int(MODE_KEY) : 0;
+  silent_indicator = mode[silent];
+
   tick_timer_service_subscribe(SECOND_UNIT, &handle_tick);
   wakeup_service_subscribe(wakeup_handler);
   app_message_register_inbox_received(in_received_handler);
   app_message_register_inbox_dropped(in_dropped_handler);
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
+  accel_tap_service_subscribe(tap_handler);
 
   window = window_create();
   // window_set_fullscreen(window, true);
@@ -338,6 +365,8 @@ static void init(void) {
 
 static void deinit(void) {
   window_destroy(window);
+  accel_tap_service_unsubscribe();
+  persist_write_int(MODE_KEY, silent);
 }
 
 int main(void) {
