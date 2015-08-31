@@ -1,14 +1,14 @@
 #include <pebble.h>
-  
+
 #define MAX_PORTAL_COUNT 20
-#define MAX_HACKS 32
+#define MAX_HACKS 34
 #define WAKEUP_BEFORE 12
 #define OPTIONS_LENGTH 2
 
 static Window *window;
 static const uint32_t EPOCH = 1388520000; // beginning of cycle 2014.01
 static const int EPOCH_YEAR = 2014;
-static const uint32_t SECS_IN_CYCLE = 630000;  
+static const uint32_t SECS_IN_CYCLE = 630000;
 static const uint32_t SECS_IN_CHECKPOINT = 18000;
 static const int16_t SIGNIFICANT_TIME = 4 * 60 * 60;
 static char time_text[] = "2014.43     29/35    4:53:23";
@@ -129,7 +129,7 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   tms = localtime((time_t*) &next);
   strftime(next_str, sizeof(next_str), "%Y-%m-%d %H:%M:%S", tms);
   snprintf(time_text, sizeof(time_text), "%d.%02ld   %02ld/35    %d:%02d:%02d",
-    year, (long) cycle, (long) checkpoint, hours, minutes, seconds);  
+    year, (long) cycle, (long) checkpoint, hours, minutes, seconds);
   for (int i=0; i<MAX_PORTAL_COUNT; i++) {
     Portal *port = &portals[i];
     if (port != NULL) {
@@ -184,7 +184,7 @@ static void wakeup_handler(WakeupId id, int32_t row) {
     if (left > 0) {
       port->seconds = left + WAKEUP_BEFORE;
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Found wakeup timer %d for portal %ld, set seconds to %d", (int) port->wakeup_id, (long) row, port->seconds);
-      port->wakeup_id = 0;  
+      port->wakeup_id = 0;
     }
   }
   clear_old_hacks(row, port);
@@ -212,7 +212,7 @@ void in_received_handler(DictionaryIterator *received, void *context) {
         break;
       }
       Tuple *hack = dict_find(received, 1 + HACKS_DONE + i);
-      port->hacked[i] = hack->value->uint32;      
+      port->hacked[i] = hack->value->uint32;
     };
     port->seconds = (port->hacked[port->hacks_done-1] + port->cooldown_time) - time(NULL);
     if (port->seconds < 0) {
@@ -227,7 +227,7 @@ void in_received_handler(DictionaryIterator *received, void *context) {
     }
     clear_old_hacks(index, port);
     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Last hack %d done %d seconds ago (%d)", port->hacks_done, port->seconds, (int) port->hacked[port->hacks_done-1]);
-    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done, port->seconds);    
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done, port->seconds);
   }
   menu_layer_reload_data(menu_layer);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
@@ -283,7 +283,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
   int minutes = (int) (port->seconds - (hours * 3600))/60;
   int seconds = port->seconds - (hours * 3600) - (minutes * 60);
   char time_text[27];
-  snprintf(time_text, sizeof(time_text), "%s %d:%02d:%02d", pre_text, hours, minutes, seconds);  
+  snprintf(time_text, sizeof(time_text), "%s %d:%02d:%02d", pre_text, hours, minutes, seconds);
   menu_cell_basic_draw(ctx, cell_layer, port->name, time_text, NULL);
 }
 
@@ -306,10 +306,10 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
   send_portal_hacks(cell_index->row, port);
   if (hide->value) {
     app_timer_register(3000, hide_all, NULL);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Scheduled auto hide: %d", hide->value);  
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Scheduled auto hide: %d", hide->value);
   }
-  else {    
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "No auto hide: %d", hide->value);  
+  else {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "No auto hide: %d", hide->value);
   }
 }
 
@@ -341,7 +341,7 @@ void window_load(Window *window) {
     .select_click = menu_select_callback,
     .select_long_click = menu_long_callback
   });
-  
+
   menu_layer_set_click_config_onto_window(menu_layer, window);
   layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
 
@@ -369,12 +369,12 @@ static void init(void) {
   vibes->key = 1;
   strcpy(vibes->name, "Vibrations");
   vibes->value = persist_exists(vibes->key) ? persist_read_int(vibes->key) : ON;
-  
+
   hide = &options[1];
   hide->key = 2;
   strcpy(hide->name, "Auto hide");
   hide->value = persist_exists(hide->key) ? persist_read_int(hide->key) : OFF;
-  
+
   tick_timer_service_subscribe(SECOND_UNIT, &handle_tick);
   wakeup_service_subscribe(wakeup_handler);
   app_message_register_inbox_received(in_received_handler);
