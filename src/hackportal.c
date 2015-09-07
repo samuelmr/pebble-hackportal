@@ -13,6 +13,7 @@ static const uint32_t SECS_IN_CHECKPOINT = 18000;
 static const int16_t SIGNIFICANT_TIME = 4 * 60 * 60;
 static char time_text[] = "2014.43     29/35    4:53:23";
 static int16_t portal_count = 0;
+static int seconds_to_next = 300;
 
 enum MODES {
   OFF = 0,
@@ -148,6 +149,7 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
           MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
           MenuIndex cell_index = {0, i};
           menu_layer_set_selected_index(menu_layer, cell_index, align, true);
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Set selected menu index to %d, %d", cell_index.section, cell_index.row);
         }
         else if (port->seconds <= 5) {
           if (vibes->value) {
@@ -176,6 +178,7 @@ static void wakeup_handler(WakeupId id, int32_t row) {
   MenuIndex index = MenuIndex(0, (int) row);
   MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
   menu_layer_set_selected_index(menu_layer, index, align, true);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Set selected menu index to %d, %d", index.section, index.row);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Woken up by wakeup %ld (portal %ld)!", (long) id, (long) row);
   Portal *port = &portals[row];
   if (port->wakeup_id) {
@@ -228,6 +231,13 @@ void in_received_handler(DictionaryIterator *received, void *context) {
     clear_old_hacks(index, port);
     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Last hack %d done %d seconds ago (%d)", port->hacks_done, port->seconds, (int) port->hacked[port->hacks_done-1]);
     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done, port->seconds);
+    if (port->seconds < seconds_to_next) {
+      MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
+      MenuIndex cell_index = {0, index};
+      menu_layer_set_selected_index(menu_layer, cell_index, align, true);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Set selected menu index to %d, %d", cell_index.section, cell_index.row);
+      seconds_to_next = port->seconds;
+    }
   }
   menu_layer_reload_data(menu_layer);
   layer_mark_dirty(menu_layer_get_layer(menu_layer));
