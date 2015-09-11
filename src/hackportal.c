@@ -3,10 +3,13 @@
 #define MAX_PORTAL_COUNT 20
 #define MAX_HACKS 34
 #define WAKEUP_BEFORE 12
-#define OPTIONS_LENGTH 2
+#define OPTIONS_LENGTH 3
+#define MAX_WAKEUPS 8
+#define FIRST_WAKEUP_STORAGE_KEY 100
+#define ZONES_LENGTH 40
 
 static Window *window;
-static const uint32_t EPOCH = 1388520000; // beginning of cycle 2014.01
+static uint32_t EPOCH = 1388523600; // beginning of cycle 2014.01 in UTC
 static const int EPOCH_YEAR = 2014;
 static const uint32_t SECS_IN_CYCLE = 630000;
 static const uint32_t SECS_IN_CHECKPOINT = 18000;
@@ -14,6 +17,9 @@ static const int16_t SIGNIFICANT_TIME = 4 * 60 * 60;
 static char time_text[] = "2014.43     29/35    4:53:23";
 static int16_t portal_count = 0;
 static int seconds_to_next = 300;
+
+static int32_t wakeups[MAX_WAKEUPS];
+static int wakeup_index = 0;
 
 enum MODES {
   OFF = 0,
@@ -30,6 +36,7 @@ typedef struct{
 static Option options[OPTIONS_LENGTH];
 static Option *vibes;
 static Option *hide;
+static Option *zone;
 
 enum MessageKey {
   PORTALS = 0,   // TUPLE_INT
@@ -57,6 +64,13 @@ typedef struct{
 
 static Portal portals[MAX_PORTAL_COUNT];
 
+typedef struct{
+  int hour;
+  int min;
+} Timezone;
+
+static Timezone zones[ZONES_LENGTH];
+
 void send_portal_hacks(int index, Portal *port) {
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
@@ -76,12 +90,30 @@ void send_portal_hacks(int index, Portal *port) {
   app_message_outbox_send();
   // APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent hacks for portal %d (%d) to phone!", index, port->hacks_done);
   if (port->wakeup_id && wakeup_query(port->wakeup_id, NULL)) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Cancelling existing wakeup for portal %ld.", (long) port->wakeup_id);
     wakeup_cancel(port->wakeup_id);
   }
+  if (wakeups[wakeup_index] && wakeup_query(wakeups[wakeup_index], NULL)) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Cancelling existing wakeup from queue %ld.", (long) port->wakeup_id);
+    wakeup_cancel(wakeups[wakeup_index]);
+  }
+
   if (port->seconds > WAKEUP_BEFORE) {
-    port->wakeup_id = wakeup_schedule(time(NULL) + port->seconds - WAKEUP_BEFORE, (int32_t) index, true);
+    time_t now = time(NULL);
+    time_t wake = now + port->seconds - WAKEUP_BEFORE;
+    port->wakeup_id = wakeup_schedule(wake, (int32_t) index, true);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Now is %ld, wake at %ld.", (long) now, (long) wake);
     if (port->wakeup_id > 0) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Set wakeup timer for portal %d after %d seconds (%ld).", index, port->seconds - WAKEUP_BEFORE, (long) port->wakeup_id);
+      wakeups[wakeup_index] = port->wakeup_id;
+      wakeup_index++;
+      if (wakeup_index >= MAX_WAKEUPS) {
+        wakeup_index = 0;
+      }
+    }
+    else if (port->wakeup_id == E_OUT_OF_RESOURCES) {
+      // should not happen
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Maximum number of wakeups already set!");
     }
     else {
       APP_LOG(APP_LOG_LEVEL_WARNING, "Could not set wakeup timer for portal %d after %d seconds: %ld.", index, port->seconds - WAKEUP_BEFORE, (long) port->wakeup_id);
@@ -116,7 +148,11 @@ static int clear_old_hacks(int index, Portal *port) {
 
 static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   time_t rt = time(NULL);
-  uint32_t t = rt - EPOCH;
+  // time_t t = rt - EPOCH;
+  int h = zones[zone->value].hour;
+  int m = zones[zone->value].min;
+  time_t t = rt - EPOCH + ((h * 60 * 60) + (m * 60));
+
   uint32_t cycle = (t / SECS_IN_CYCLE)%50;
   uint32_t checkpoint = (t % SECS_IN_CYCLE) / SECS_IN_CHECKPOINT + 1;
   uint32_t countdown = SECS_IN_CHECKPOINT - (t % SECS_IN_CHECKPOINT);
@@ -231,7 +267,7 @@ void in_received_handler(DictionaryIterator *received, void *context) {
     clear_old_hacks(index, port);
     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Last hack %d done %d seconds ago (%d)", port->hacks_done, port->seconds, (int) port->hacked[port->hacks_done-1]);
     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Got configuration for portal %d: %s, %d, %d, %d, %d", index, port->name, port->cooldown_time, port->hacks, port->hacks_done, port->seconds);
-    if (port->seconds < seconds_to_next) {
+    if ((port->seconds > 0) && (port->seconds < seconds_to_next)) {
       MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
       MenuIndex cell_index = {0, index};
       menu_layer_set_selected_index(menu_layer, cell_index, align, true);
@@ -276,6 +312,15 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   if (cell_index->section > 0) {
     Option *opt = &options[cell_index->row];
+    if (cell_index->row == 2) {
+      char zone_text[11];
+      int h = zones[opt->value].hour;
+      int m = zones[opt->value].min;
+      snprintf(zone_text, sizeof(zone_text), "UTC %s%d:%02d", (h > 0 ? "+" : ""), h, m);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Hour %d, min %d", h, m);
+      menu_cell_basic_draw(ctx, cell_layer, opt->name, zone_text, NULL);
+      return;
+    }
     menu_cell_basic_draw(ctx, cell_layer, opt->name, mode[opt->value], NULL);
     return;
   }
@@ -298,9 +343,18 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 }
 
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
+  Option *opt = &options[cell_index->row];
   if (cell_index->section > 0) {
-    options[cell_index->row].value = !options[cell_index->row].value;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Toggled %s to %s", options[cell_index->row].name, mode[options[cell_index->row].value]);
+    if (cell_index->row == 2) {
+      opt->value += 1;
+      if (opt->value >= ZONES_LENGTH) {
+        opt->value = 0;
+      }
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Set %s to %d:%02d", opt->name, zones[opt->value].hour, zones[opt->value].min);
+      return;
+    }
+    opt->value = !opt->value; // toggle
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Toggled %s to %s", opt->name, mode[opt->value]);
     return;
   }
   Portal *port = &portals[cell_index->row];
@@ -339,6 +393,7 @@ void menu_long_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data
 }
 
 void window_load(Window *window) {
+
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_frame(window_layer);
   menu_layer = menu_layer_create(bounds);
@@ -385,6 +440,83 @@ static void init(void) {
   strcpy(hide->name, "Auto hide");
   hide->value = persist_exists(hide->key) ? persist_read_int(hide->key) : OFF;
 
+  zone = &options[2];
+  zone->key = 3;
+  strcpy(zone->name, "Timezone");
+  zone->value = persist_exists(zone->key) ? persist_read_int(zone->key) : 15;
+
+  zones[0] = (Timezone) {-12, 0};
+  zones[1] = (Timezone) {-11, 0};
+  zones[2] = (Timezone) {-10, 0};
+  zones[3] = (Timezone) {-9, 30};
+  zones[4] = (Timezone) {-9, 0};
+  zones[5] = (Timezone) {-8, 0};
+  zones[6] = (Timezone) {-7, 0};
+  zones[7] = (Timezone) {-6, 0};
+  zones[8] = (Timezone) {-5, 0};
+  zones[9] = (Timezone) {-4, 30};
+  zones[10] = (Timezone) {-4, 0};
+  zones[11] = (Timezone) {-3, 30};
+  zones[12] = (Timezone) {-3, 0};
+  zones[13] = (Timezone) {-2, 0};
+  zones[14] = (Timezone) {-1, 0};
+  zones[15] = (Timezone) {0, 0};
+  zones[16] = (Timezone) {1, 0};
+  zones[17] = (Timezone) {2, 0};
+  zones[18] = (Timezone) {3, 0};
+  zones[19] = (Timezone) {3, 30};
+  zones[20] = (Timezone) {4, 0};
+  zones[21] = (Timezone) {4, 30};
+  zones[22] = (Timezone) {5, 0};
+  zones[23] = (Timezone) {5, 30};
+  zones[24] = (Timezone) {5, 45};
+  zones[25] = (Timezone) {6, 0};
+  zones[26] = (Timezone) {6, 30};
+  zones[27] = (Timezone) {7, 0};
+  zones[28] = (Timezone) {8, 0};
+  zones[29] = (Timezone) {8, 45};
+  zones[30] = (Timezone) {9, 0};
+  zones[31] = (Timezone) {9, 30};
+  zones[32] = (Timezone) {10, 0};
+  zones[33] = (Timezone) {10, 30};
+  zones[34] = (Timezone) {11, 0};
+  zones[35] = (Timezone) {11, 30};
+  zones[36] = (Timezone) {12, 0};
+  zones[37] = (Timezone) {12, 45};
+  zones[38] = (Timezone) {13, 0};
+  zones[39] = (Timezone) {14, 0};
+
+#ifdef PBL_SDK_3
+  time_t temp;
+  struct tm *t;
+  temp = time(NULL);
+  t = localtime(&temp);
+  EPOCH += t->tm_gmtoff;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Moving EPOCH back %d seconds", t->tm_gmtoff);
+  int offset_hours = (int) t->tm_gmtoff/3600;
+  if (t->tm_isdst) {
+    // breaks if :30 and :45 zones are using DST
+    offset_hours += 1;
+    // EPOCH += 3600;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Moving EPOCH back for summertime");
+  }
+  int offset_mins = (int) t->tm_gmtoff%3600;
+  for (int i=0; i<ZONES_LENGTH; i++) {
+    if ((zones[i].hour == offset_hours) && (zones[i].min == offset_mins)) {
+      zone->value = i;
+      break;
+    }
+  }
+#endif
+
+  for (int i=0; i<MAX_WAKEUPS; i++) {
+    // wakeup storage keys start from 100
+    if (persist_exists(i+FIRST_WAKEUP_STORAGE_KEY)) {
+      wakeups[i] = persist_read_int(i+FIRST_WAKEUP_STORAGE_KEY);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Restored wakeup %d", (int) wakeups[i]);
+    }
+  }
+
   tick_timer_service_subscribe(SECOND_UNIT, &handle_tick);
   wakeup_service_subscribe(wakeup_handler);
   app_message_register_inbox_received(in_received_handler);
@@ -410,6 +542,12 @@ static void deinit(void) {
   window_destroy(window);
   for (int i=0; i<OPTIONS_LENGTH; i++) {
     persist_write_int(options[i].key, options[i].value);
+  }
+  for (int i=0; i<MAX_WAKEUPS; i++) {
+    if (wakeup_query(wakeups[i], NULL)) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Storing valid wakeup %d", (int) wakeups[i]);
+      wakeups[i] = persist_write_int(i+FIRST_WAKEUP_STORAGE_KEY, wakeups[i]);
+    }
   }
 }
 
