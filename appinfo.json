@@ -27,7 +27,8 @@
     "shortName": "Hack Portal",
     "targetPlatforms": [
         "aplite",
-        "basalt"
+        "basalt",
+        "chalk"
     ],
     "uuid": "151442aa-6258-4189-b8e4-c4a9337216d1",
     "versionLabel": "3.15",
