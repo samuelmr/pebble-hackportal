@@ -90,11 +90,11 @@ void send_portal_hacks(int index, Portal *port) {
   app_message_outbox_send();
   // APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent hacks for portal %d (%d) to phone!", index, port->hacks_done);
   if (port->wakeup_id && wakeup_query(port->wakeup_id, NULL)) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Cancelling existing wakeup for portal %ld.", (long) port->wakeup_id);
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Cancelling existing wakeup for portal %ld.", (long) port->wakeup_id);
     wakeup_cancel(port->wakeup_id);
   }
   if (wakeups[wakeup_index] && wakeup_query(wakeups[wakeup_index], NULL)) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Cancelling existing wakeup from queue %ld.", (long) port->wakeup_id);
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Cancelling existing wakeup from queue %ld.", (long) port->wakeup_id);
     wakeup_cancel(wakeups[wakeup_index]);
   }
 
@@ -102,9 +102,9 @@ void send_portal_hacks(int index, Portal *port) {
     time_t now = time(NULL);
     time_t wake = now + port->seconds - WAKEUP_BEFORE;
     port->wakeup_id = wakeup_schedule(wake, (int32_t) index, true);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Now is %ld, wake at %ld.", (long) now, (long) wake);
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Now is %ld, wake at %ld.", (long) now, (long) wake);
     if (port->wakeup_id > 0) {
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Set wakeup timer for portal %d after %d seconds (%ld).", index, port->seconds - WAKEUP_BEFORE, (long) port->wakeup_id);
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Set wakeup timer for portal %d after %d seconds (%ld).", index, port->seconds - WAKEUP_BEFORE, (long) port->wakeup_id);
       wakeups[wakeup_index] = port->wakeup_id;
       wakeup_index++;
       if (wakeup_index >= MAX_WAKEUPS) {
@@ -185,7 +185,7 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
           MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
           MenuIndex cell_index = {0, i};
           menu_layer_set_selected_index(menu_layer, cell_index, align, true);
-          APP_LOG(APP_LOG_LEVEL_DEBUG, "Set selected menu index to %d, %d", cell_index.section, cell_index.row);
+          // APP_LOG(APP_LOG_LEVEL_DEBUG, "Set selected menu index to %d, %d", cell_index.section, cell_index.row);
         }
         else if (port->seconds <= 5) {
           if (vibes->value) {
@@ -222,7 +222,7 @@ static void wakeup_handler(WakeupId id, int32_t row) {
     wakeup_query(port->wakeup_id, &left);
     if (left > 0) {
       port->seconds = left + WAKEUP_BEFORE;
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Found wakeup timer %d for portal %ld, set seconds to %d", (int) port->wakeup_id, (long) row, port->seconds);
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Found wakeup timer %d for portal %ld, set seconds to %d", (int) port->wakeup_id, (long) row, port->seconds);
       port->wakeup_id = 0;
     }
   }
@@ -271,7 +271,7 @@ void in_received_handler(DictionaryIterator *received, void *context) {
       MenuRowAlign align = (portal_count <= 3) ? MenuRowAlignNone : MenuRowAlignCenter;
       MenuIndex cell_index = {0, index};
       menu_layer_set_selected_index(menu_layer, cell_index, align, true);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Set selected menu index to %d, %d", cell_index.section, cell_index.row);
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Set selected menu index to %d, %d", cell_index.section, cell_index.row);
       seconds_to_next = port->seconds;
     }
   }
@@ -297,16 +297,22 @@ static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t secti
 
 static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
   // APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu header height: %d", MENU_CELL_BASIC_HEADER_HEIGHT);
-  return MENU_CELL_BASIC_HEADER_HEIGHT;
+  #ifdef PBL_RECT
+    return MENU_CELL_BASIC_HEADER_HEIGHT;
+  #else
+    return 0;
+  #endif
 }
 
 static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
-  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Time: %s", time_text);
-  if (section_index > 0) {
-    menu_cell_basic_header_draw(ctx, cell_layer, "Options");
-    return;
-  }
-  menu_cell_basic_header_draw(ctx, cell_layer, time_text);
+  #ifdef PBL_RECT
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Time: %s", time_text);
+    if (section_index > 0) {
+      menu_cell_basic_header_draw(ctx, cell_layer, "Options");
+      return;
+    }
+    menu_cell_basic_header_draw(ctx, cell_layer, time_text);
+  #endif
 }
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
@@ -317,7 +323,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
       int h = zones[opt->value].hour;
       int m = zones[opt->value].min;
       snprintf(zone_text, sizeof(zone_text), "UTC %s%d:%02d", (h > 0 ? "+" : ""), h, m);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Hour %d, min %d", h, m);
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Hour %d, min %d", h, m);
       menu_cell_basic_draw(ctx, cell_layer, opt->name, zone_text, NULL);
       return;
     }
@@ -350,11 +356,11 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
       if (opt->value >= ZONES_LENGTH) {
         opt->value = 0;
       }
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Set %s to %d:%02d", opt->name, zones[opt->value].hour, zones[opt->value].min);
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Set %s to %d:%02d", opt->name, zones[opt->value].hour, zones[opt->value].min);
       return;
     }
     opt->value = !opt->value; // toggle
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Toggled %s to %s", opt->name, mode[opt->value]);
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Toggled %s to %s", opt->name, mode[opt->value]);
     return;
   }
   Portal *port = &portals[cell_index->row];
@@ -370,10 +376,10 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
   send_portal_hacks(cell_index->row, port);
   if (hide->value) {
     app_timer_register(3000, hide_all, NULL);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Scheduled auto hide: %d", hide->value);
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Scheduled auto hide: %d", hide->value);
   }
   else {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "No auto hide: %d", hide->value);
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "No auto hide: %d", hide->value);
   }
 }
 
@@ -492,13 +498,13 @@ static void init(void) {
   temp = time(NULL);
   t = localtime(&temp);
   EPOCH += t->tm_gmtoff;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Moving EPOCH back %d seconds", t->tm_gmtoff);
+  // APP_LOG(APP_LOG_LEVEL_DEBUG, "Moving EPOCH back %d seconds", t->tm_gmtoff);
   int offset_hours = (int) t->tm_gmtoff/3600;
   if (t->tm_isdst) {
     // breaks if :30 and :45 zones are using DST
     offset_hours += 1;
     // EPOCH += 3600;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Moving EPOCH back for summertime");
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Moving EPOCH back for summertime");
   }
   int offset_mins = (int) t->tm_gmtoff%3600;
   for (int i=0; i<ZONES_LENGTH; i++) {
@@ -513,7 +519,7 @@ static void init(void) {
     // wakeup storage keys start from 100
     if (persist_exists(i+FIRST_WAKEUP_STORAGE_KEY)) {
       wakeups[i] = persist_read_int(i+FIRST_WAKEUP_STORAGE_KEY);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Restored wakeup %d", (int) wakeups[i]);
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Restored wakeup %d", (int) wakeups[i]);
     }
   }
 
@@ -545,7 +551,7 @@ static void deinit(void) {
   }
   for (int i=0; i<MAX_WAKEUPS; i++) {
     if (wakeup_query(wakeups[i], NULL)) {
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Storing valid wakeup %d", (int) wakeups[i]);
+      // APP_LOG(APP_LOG_LEVEL_DEBUG, "Storing valid wakeup %d", (int) wakeups[i]);
       wakeups[i] = persist_write_int(i+FIRST_WAKEUP_STORAGE_KEY, wakeups[i]);
     }
   }
