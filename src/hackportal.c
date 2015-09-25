@@ -297,15 +297,15 @@ static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t secti
 
 static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
   // APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu header height: %d", MENU_CELL_BASIC_HEADER_HEIGHT);
-  #ifdef PBL_RECT
-    return MENU_CELL_BASIC_HEADER_HEIGHT;
-  #else
+  #ifdef PBL_ROUND
     return 0;
+  #else
+    return MENU_CELL_BASIC_HEADER_HEIGHT;
   #endif
 }
 
 static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
-  #ifdef PBL_RECT
+  #ifndef PBL_ROUND
     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Time: %s", time_text);
     if (section_index > 0) {
       menu_cell_basic_header_draw(ctx, cell_layer, "Options");
@@ -412,8 +412,12 @@ void window_load(Window *window) {
     .select_click = menu_select_callback,
     .select_long_click = menu_long_callback
   });
-
+#ifdef PBL_COLOR
+  menu_layer_set_normal_colors(menu_layer, GColorBlack, GColorElectricBlue);
+  menu_layer_set_highlight_colors(menu_layer, GColorBlack, GColorChromeYellow);
+#endif
   menu_layer_set_click_config_onto_window(menu_layer, window);
+  menu_layer_set_selected_index(menu_layer, (MenuIndex) {0, 0}, MenuRowAlignNone, true);
   layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
 
   Portal *port1 = &portals[0];
