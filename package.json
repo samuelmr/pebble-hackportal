@@ -1,0 +1,50 @@
+{
+    "author": "Samuel Rinnetm\u00e4ki",
+    "dependencies": {},
+    "keywords": [],
+    "name": "hack-portal",
+    "pebble": {
+        "capabilities": [
+            "configurable"
+        ],
+        "displayName": "Hack Portal",
+        "enableMultiJS": true,
+        "messageKeys": {
+            "cooldown": 3,
+            "hacks": 4,
+            "hacks_done": 5,
+            "index": 1,
+            "name": 2,
+            "portals": 0
+        },
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/icon.png",
+                    "name": "IMAGE_MENU_ICON",
+                    "type": "png"
+                },
+                {
+                    "file": "images/portal25.png",
+                    "menuIcon": true,
+                    "name": "PORTAL25",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+        ],
+        "uuid": "151442aa-6258-4189-b8e4-c4a9337216d1",
+        "watchapp": {
+            "watchface": false
+        }
+    },
+    "version": "3.16.0"
+}

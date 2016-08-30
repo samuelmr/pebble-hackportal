@@ -111,6 +111,7 @@ function pushHackPin(name, time) {
     "layout": {
       "type": "genericPin",
       "title": "Hacked " + name,
+      // "tinyIcon": "app://images/PORTAL25"
       "tinyIcon": "system://images/TIMELINE_CALENDAR_TINY"
     }
   };
@@ -140,6 +141,7 @@ function pushSojournerPin(time) {
           "title": "Hack portal by " + readableTime(sojodeadline),
           "subtitle": hoursBefore + " hours",
           "body": "Last known hack at " + readableTime(time),
+          // "tinyIcon": "app://images/PORTAL25"
           "tinyIcon": "system://images/TIMELINE_ALARM_TINY"
         }
       },
@@ -150,6 +152,7 @@ function pushSojournerPin(time) {
           "title": "Hack by " + readableTime(sojodeadline),
           "subtitle": minsBefore + " minutes",
           "body": "Last known hack at " + readableTime(time),
+          // "tinyIcon": "app://images/PORTAL25"
           "tinyIcon": "system://images/TIMELINE_ALARM_TINY"
         }
       }
@@ -177,6 +180,8 @@ function readableTime(time) {
 }
 
 function sendConfig(config) {
+  // side effect: also set appGlance slices...
+  var appGlanceSlices = [];
   for (var i=0; i<config.length; i++) {
     var hacktimes = [];
     if (config[i].hacktimes && (config[i].hacktimes.length > 0)) {
@@ -194,8 +199,26 @@ function sendConfig(config) {
       msg[key] = parseInt(hacktimes[j]);
     }
     messageQueue.push(msg);
+    var slice = {
+      "layout": {
+        "icon": "app://images/IMAGE_MENU_ICON",
+        "subtitleTemplateString": ""
+      }
+    };
+    appGlanceSlices.push(slice);
   }
   sendNextMessage();
+  if (Pebble.appGlanceReload) {
+    Pebble.appGlanceReload(appGlanceSlices, appGlanceSuccess, appGlanceFailure);
+  }
+}
+
+function appGlanceSuccess(appGlanceSlices, appGlanceReloadResult) {
+  console.log('App glances updated!');
+}
+
+function appGlanceFailure(appGlanceSlices, appGlanceReloadResult) {
+  console.error('App glance update FAILED!');
 }
 
 function sendNextMessage() {

@@ -21,6 +21,11 @@ static int seconds_to_next = 300;
 static int32_t wakeups[MAX_WAKEUPS];
 static int wakeup_index = 0;
 
+#if PBL_API_EXISTS(app_glance_reload)
+static AppGlanceSlice slices[MAX_PORTAL_COUNT];
+static size_t slice_count = 0;
+#endif
+
 enum MODES {
   OFF = 0,
   ON = 1
@@ -229,6 +234,9 @@ static void wakeup_handler(WakeupId id, int32_t row) {
   clear_old_hacks(row, port);
 }
 static void hide_all(void *data) {
+#if PBL_API_EXISTS(app_exit_reason_set)
+  app_exit_reason_set(APP_EXIT_ACTION_PERFORMED_SUCCESSFULLY);
+#endif
   window_stack_pop(window);
 }
 void in_received_handler(DictionaryIterator *received, void *context) {
@@ -346,6 +354,27 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
   char time_text[27];
   snprintf(time_text, sizeof(time_text), "%s %d:%02d:%02d", pre_text, hours, minutes, seconds);
   menu_cell_basic_draw(ctx, cell_layer, port->name, time_text, NULL);
+  
+#if PBL_API_EXISTS(app_glance_reload)
+  // side effect: update app glance slice for portal!
+  time_t now = time(NULL);
+  time_t then = now + port->seconds;
+  char message[80];
+  char slice_time[40];
+  struct tm *tms;
+  tms = localtime((time_t*) &then);
+  strftime(slice_time, sizeof(slice_time), "%H:%M:%S", tms);
+  snprintf(message, sizeof(message), "%s %s", slice_time, port->name);
+  const AppGlanceSlice entry = (AppGlanceSlice) {
+    .layout = {
+      // .icon = RESOURCE_ID_PORTAL25,
+      .subtitle_template_string = message
+    },
+    .expiration_time = then
+  };
+  slices[slice_count++] = entry;
+#endif
+
 }
 
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
@@ -496,7 +525,7 @@ static void init(void) {
   zones[38] = (Timezone) {13, 0};
   zones[39] = (Timezone) {14, 0};
 
-#ifdef PBL_SDK_3
+#ifndef PBL_PLATFORM_APLITE
   time_t temp;
   struct tm *t;
   temp = time(NULL);
@@ -531,7 +560,8 @@ static void init(void) {
   wakeup_service_subscribe(wakeup_handler);
   app_message_register_inbox_received(in_received_handler);
   app_message_register_inbox_dropped(in_dropped_handler);
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  // app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_open(1024, 1024);
 
   window = window_create();
   // window_set_fullscreen(window, true);
@@ -548,6 +578,21 @@ static void init(void) {
   }
 }
 
+#if PBL_API_EXISTS(app_glance_reload)
+static void prv_update_app_glance(AppGlanceReloadSession *session,
+                                       size_t limit, void *context) {
+  size_t max_slices = (limit > slice_count) ? slice_count : limit;
+  // TODO: order by slice expiration time
+  for (size_t i=0; i<max_slices; i++) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Setting app glance: %s", slices[i].layout.subtitle_template_string);
+    const AppGlanceResult result = app_glance_add_slice(session, slices[i]);
+    if (result != APP_GLANCE_RESULT_SUCCESS) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "AppGlance Error: %d", result);
+    }
+  }
+}
+#endif
+
 static void deinit(void) {
   window_destroy(window);
   for (int i=0; i<OPTIONS_LENGTH; i++) {
@@ -559,6 +604,9 @@ static void deinit(void) {
       wakeups[i] = persist_write_int(i+FIRST_WAKEUP_STORAGE_KEY, wakeups[i]);
     }
   }
+#if PBL_API_EXISTS(app_glance_reload)
+  app_glance_reload(prv_update_app_glance, NULL);
+#endif
 }
 
 int main(void) {
