@@ -3,3 +3,5 @@
 .lock-waf_darwin_build
 build/
 appstore-resources
+
+node_modules/
