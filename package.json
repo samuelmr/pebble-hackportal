@@ -1,0 +1,70 @@
+{
+  "version": "3.18.0",
+  "author": "Samuel Rinnetmäki",
+  "private": true,
+  "dependencies": {},
+  "keywords": [
+    "pebble-app"
+  ],
+  "pebble": {
+    "sdkVersion": "3",
+    "resources": {
+      "media": [
+        {
+          "menuIcon": true,
+          "type": "png",
+          "name": "PORTAL_TINY",
+          "file": "images/icon25.png"
+        },
+        {
+          "type": "png",
+          "name": "PORTAL_SMALL",
+          "file": "images/icon50.png"
+        },
+        {
+          "type": "png",
+          "name": "PORTAL_LARGE",
+          "file": "images/icon80.png"
+        }
+      ],
+      "publishedMedia": [
+        {
+          "name": "PORTAL",
+          "id": 1,
+          "glance": "PORTAL_TINY",
+          "timeline": {
+            "tiny": "PORTAL_TINY",
+            "small": "PORTAL_SMALL",
+            "large": "PORTAL_LARGE"
+          }
+        }
+      ]
+    },
+    "projectType": "native",
+    "uuid": "151442aa-6258-4189-b8e4-c4a9337216d1",
+    "messageKeys": {
+      "index": 1,
+      "portals": 0,
+      "name": 2,
+      "hacks_done": 5,
+      "cooldown": 3,
+      "hacks": 4
+    },
+    "enableMultiJS": false,
+    "displayName": "Hack Portal",
+    "watchapp": {
+      "onlyShownOnCommunication": false,
+      "hiddenApp": false,
+      "watchface": false
+    },
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk"
+    ],
+    "capabilities": [
+      "configurable"
+    ]
+  },
+  "name": "Hack Portal"
+}
