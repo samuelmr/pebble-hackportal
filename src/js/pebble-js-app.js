@@ -1,7 +1,7 @@
 var initialized = false;
 var config = [{"name": "No Name", "cooldown": 300, "hacktimes": [], "hacks": 4}];
 var messageQueue = [];
-// tuple keys 0 - 5 are reserved (see settings), 
+// tuple keys 0 - 5 are reserved (see settings),
 // the rest are hack times for a portal
 var FIRST_HACK = 6;
 var hack_separator = '|';
@@ -28,10 +28,10 @@ Pebble.addEventListener("ready", function(e) {
         // console.log('Got timeline token ' + token);
         timelineToken = token;
       },
-      function (error) { 
+      function (error) {
         console.warn('Error getting timeline token: ' + error);
       }
-    );    
+    );
   }
   initialized = true;
   console.log("JavaScript app ready and running!");
@@ -97,7 +97,7 @@ Pebble.addEventListener("appmessage",
       }
     }
     else {
-      console.warn("No payload in message from watch!");  
+      console.warn("No payload in message from watch!");
     }
   }
 );
@@ -111,7 +111,7 @@ function pushHackPin(name, time) {
     "layout": {
       "type": "genericPin",
       "title": "Hacked " + name,
-      "tinyIcon": "system://images/TIMELINE_CALENDAR_TINY"
+      "tinyIcon": "app://images/PORTAL_TINY"
     }
   };
   insertUserPin(pin, function(result) {
@@ -130,7 +130,7 @@ function pushSojournerPin(time) {
       "type": "genericPin",
       "title": "Hack by " + readableTime(sojodeadline),
       "body": "Last known hack at " + readableTime(time),
-      "tinyIcon": "system://images/TIMELINE_ALARM_TINY"
+      "tinyIcon": "app://images/PORTAL_TINY"
     },
     "reminders": [
       {
@@ -140,7 +140,7 @@ function pushSojournerPin(time) {
           "title": "Hack portal by " + readableTime(sojodeadline),
           "subtitle": hoursBefore + " hours",
           "body": "Last known hack at " + readableTime(time),
-          "tinyIcon": "system://images/TIMELINE_ALARM_TINY"
+          "tinyIcon": "app://images/PORTAL_TINY"
         }
       },
       {
@@ -150,10 +150,10 @@ function pushSojournerPin(time) {
           "title": "Hack by " + readableTime(sojodeadline),
           "subtitle": minsBefore + " minutes",
           "body": "Last known hack at " + readableTime(time),
-          "tinyIcon": "system://images/TIMELINE_ALARM_TINY"
+          "tinyIcon": "app://images/PORTAL_TINY"
         }
       }
-    ]           
+    ]
   };
   insertUserPin(pin, function(result) {
     // console.log('Pushed sojo pin: ' + result);
@@ -180,7 +180,7 @@ function sendConfig(config) {
   for (var i=0; i<config.length; i++) {
     var hacktimes = [];
     if (config[i].hacktimes && (config[i].hacktimes.length > 0)) {
-      hacktimes = config[i].hacktimes.split(hack_separator); 
+      hacktimes = config[i].hacktimes.split(hack_separator);
       // console.log("Found " + hacktimes.length + " hack times from " + config[i].hacktimes);
     }
     var msg = {portals: config.length,
