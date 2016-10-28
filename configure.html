@@ -326,7 +326,7 @@
   }
   var return_to = getQueryParam('return_to', 'pebblejs://close#');
   var return_string = return_to + encodeURIComponent(JSON.stringify({config: config}));
-  console.log(return_string);
+  console.log('The string ' + return_string + ' contains config: ' + return_string.indexOf('config'));
   document.location = return_string;
   return false;
  }
