@@ -298,8 +298,6 @@
  }
  function getQueryParam(variable, default_) {
   var query = location.search.substring(1);
-  // work around CloudPebble issue #124
-  query += location.hash.substr(location.hash.indexOf('?')+1);
   var vars = query.split('&');
   for (var i = 0; i < vars.length; i++) {
    var pair = vars[i].split('=');
@@ -325,9 +323,7 @@
                 'hacktimes': f.hacktimes.value});
   }
   var return_to = getQueryParam('return_to', 'pebblejs://close#');
-  var return_string = return_to + encodeURIComponent(JSON.stringify({config: config}));
-  console.log('The string ' + return_string + ' contains config: ' + return_string.indexOf('config'));
-  document.location = return_string;
+  document.location = return_to + encodeURIComponent(JSON.stringify(config));
   return false;
  }
 </script>
