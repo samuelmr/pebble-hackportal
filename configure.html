@@ -325,7 +325,8 @@
                 'hacktimes': f.hacktimes.value});
   }
   var return_to = getQueryParam('return_to', 'pebblejs://close#');
-  location.href = return_to + encodeURIComponent(JSON.stringify({config: config}));
+  var return_string = return_to + encodeURIComponent(JSON.stringify({config: config}));
+  document.location = return_string;
   return false;
  }
 </script>
