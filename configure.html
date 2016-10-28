@@ -92,7 +92,7 @@
   display: block;
   float: left;
  }
- 
+
 </style>
 </head>
 <body>
@@ -258,7 +258,7 @@
   if (!parent) {
    return false;
   }
-  if (parent.nextSibling.nextSibling && 
+  if (parent.nextSibling.nextSibling &&
       (parent.nextSibling.tagName.toLowerCase() == 'form')) {
    parent.parentNode.insertBefore(parent, parent.nextSibling.nextSibling);
   }
@@ -325,7 +325,7 @@
                 'hacktimes': f.hacktimes.value});
   }
   var return_to = getQueryParam('return_to', 'pebblejs://close#');
-  location.href = return_to + encodeURIComponent(JSON.stringify(config));
+  document.location = return_to + encodeURIComponent(JSON.stringify(config));
   return false;
  }
 </script>
