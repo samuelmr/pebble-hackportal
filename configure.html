@@ -326,6 +326,7 @@
   }
   var return_to = getQueryParam('return_to', 'pebblejs://close#');
   var return_string = return_to + encodeURIComponent(JSON.stringify({config: config}));
+  console.log(return_string);
   document.location = return_string;
   return false;
  }
