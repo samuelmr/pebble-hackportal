@@ -50,7 +50,7 @@
       "cooldown": 3,
       "hacks": 4
     },
-    "enableMultiJS": false,
+    "enableMultiJS": true,
     "displayName": "Hack Portal",
     "watchapp": {
       "onlyShownOnCommunication": false,
@@ -60,11 +60,13 @@
     "targetPlatforms": [
       "aplite",
       "basalt",
-      "chalk"
+      "chalk",
+      "diorite",
+      "emery"
     ],
     "capabilities": [
       "configurable"
     ]
   },
-  "name": "Hack Portal"
+  "name": "hack-portal"
 }

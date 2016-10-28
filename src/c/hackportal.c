@@ -229,6 +229,9 @@ static void wakeup_handler(WakeupId id, int32_t row) {
   clear_old_hacks(row, port);
 }
 static void hide_all(void *data) {
+#if PBL_API_EXISTS(app_exit_reason_set)
+  app_exit_reason_set(APP_EXIT_ACTION_PERFORMED_SUCCESSFULLY);
+#endif
   window_stack_pop(window);
 }
 void in_received_handler(DictionaryIterator *received, void *context) {
@@ -317,6 +320,7 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   if (cell_index->section > 0) {
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu index: %d", cell_index->row);
     Option *opt = &options[cell_index->row];
     if (cell_index->row == 2) {
       char zone_text[11];
@@ -496,7 +500,7 @@ static void init(void) {
   zones[38] = (Timezone) {13, 0};
   zones[39] = (Timezone) {14, 0};
 
-#ifdef PBL_SDK_3
+#ifndef PBL_PLATFORM_APLITE
   time_t temp;
   struct tm *t;
   temp = time(NULL);
@@ -531,7 +535,8 @@ static void init(void) {
   wakeup_service_subscribe(wakeup_handler);
   app_message_register_inbox_received(in_received_handler);
   app_message_register_inbox_dropped(in_dropped_handler);
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  // app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_open(1024, 1024);
 
   window = window_create();
   // window_set_fullscreen(window, true);
@@ -548,6 +553,50 @@ static void init(void) {
   }
 }
 
+#if PBL_API_EXISTS(app_glance_reload)
+static void prv_update_app_glance(AppGlanceReloadSession *session,
+                                       size_t limit, void *context) {
+  size_t max_slices = (limit > (size_t) portal_count) ? (size_t) portal_count : limit;
+  AppGlanceSlice slices[max_slices];
+  char slice_times[max_slices][9];
+  char messages[max_slices][80];
+  size_t slice_count = 0;
+  time_t now = time(NULL);
+  struct tm *tms;
+
+  for (int16_t i=0; i<portal_count; i++) {
+    Portal *port = &portals[i];
+    if (port->seconds) {
+      time_t then = now + port->seconds;
+      tms = localtime((time_t*) &then);
+      strftime(slice_times[slice_count], 9, "%H:%M:%S", tms);
+      snprintf(messages[slice_count], 80, "%s %s", slice_times[slice_count], port->name);
+      const AppGlanceSlice entry = (AppGlanceSlice) {
+        .layout = {
+          // .icon = RESOURCE_ID_PORTAL,
+          .icon = APP_GLANCE_SLICE_DEFAULT_ICON,
+          .subtitle_template_string = messages[slice_count]
+        },
+        .expiration_time = then
+      };
+      slices[slice_count++] = entry;
+      if (slice_count > max_slices) {
+        break;
+      }
+    }
+  }
+
+  // TODO: order by slice expiration time
+  for (size_t i=0; i<slice_count; i++) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Setting app glance: %s", slices[i].layout.subtitle_template_string);
+    const AppGlanceResult result = app_glance_add_slice(session, slices[i]);
+    if (result != APP_GLANCE_RESULT_SUCCESS) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "AppGlance Error: %d", result);
+    }
+  }
+}
+#endif
+
 static void deinit(void) {
   window_destroy(window);
   for (int i=0; i<OPTIONS_LENGTH; i++) {
@@ -559,6 +608,9 @@ static void deinit(void) {
       wakeups[i] = persist_write_int(i+FIRST_WAKEUP_STORAGE_KEY, wakeups[i]);
     }
   }
+#if PBL_API_EXISTS(app_glance_reload)
+    app_glance_reload(prv_update_app_glance, NULL);
+#endif
 }
 
 int main(void) {

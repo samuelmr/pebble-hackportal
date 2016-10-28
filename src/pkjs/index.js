@@ -48,6 +48,7 @@ Pebble.addEventListener("showConfiguration",
 
 Pebble.addEventListener("webviewclosed",
   function(e) {
+    console.log(JSON.stringify(e));
     var webConfig = decodeURIComponent(e.response);
     console.log("Webview window returned: " + webConfig);
     if (webConfig.charAt(0) == "[") {
@@ -177,6 +178,8 @@ function readableTime(time) {
 }
 
 function sendConfig(config) {
+  // side effect: also set appGlance slices...
+  var appGlanceSlices = [];
   for (var i=0; i<config.length; i++) {
     var hacktimes = [];
     if (config[i].hacktimes && (config[i].hacktimes.length > 0)) {
