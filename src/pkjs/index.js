@@ -112,7 +112,7 @@ function pushHackPin(name, time) {
     "layout": {
       "type": "genericPin",
       "title": "Hacked " + name,
-      "tinyIcon": "app://images/PORTAL_TINY"
+      "tinyIcon": "app://images/PORTAL"
     }
   };
   insertUserPin(pin, function(result) {
@@ -131,7 +131,7 @@ function pushSojournerPin(time) {
       "type": "genericPin",
       "title": "Hack by " + readableTime(sojodeadline),
       "body": "Last known hack at " + readableTime(time),
-      "tinyIcon": "app://images/PORTAL_TINY"
+      "tinyIcon": "app://images/PORTAL"
     },
     "reminders": [
       {
@@ -141,7 +141,7 @@ function pushSojournerPin(time) {
           "title": "Hack portal by " + readableTime(sojodeadline),
           "subtitle": hoursBefore + " hours",
           "body": "Last known hack at " + readableTime(time),
-          "tinyIcon": "app://images/PORTAL_TINY"
+          "tinyIcon": "app://images/PORTAL"
         }
       },
       {
@@ -151,7 +151,7 @@ function pushSojournerPin(time) {
           "title": "Hack by " + readableTime(sojodeadline),
           "subtitle": minsBefore + " minutes",
           "body": "Last known hack at " + readableTime(time),
-          "tinyIcon": "app://images/PORTAL_TINY"
+          "tinyIcon": "app://images/PORTAL"
         }
       }
     ]

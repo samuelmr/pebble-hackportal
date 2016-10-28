@@ -1,5 +1,5 @@
 {
-  "version": "3.18.0",
+  "version": "3.19.0",
   "author": "Samuel Rinnetmäki",
   "private": true,
   "dependencies": {},
@@ -12,17 +12,17 @@
       "media": [
         {
           "menuIcon": true,
-          "type": "png",
+          "type": "bitmap",
           "name": "PORTAL_TINY",
           "file": "images/icon25.png"
         },
         {
-          "type": "png",
+          "type": "bitmap",
           "name": "PORTAL_SMALL",
           "file": "images/icon50.png"
         },
         {
-          "type": "png",
+          "type": "bitmap",
           "name": "PORTAL_LARGE",
           "file": "images/icon80.png"
         }
